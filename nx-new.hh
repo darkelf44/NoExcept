@@ -1,25 +1,26 @@
 // Include guard
 #pragma once
 
-// Standard includes
-#include <stddef.h>
+// Local includes
+#include "nx-core.hh"
 
 // Normal `new` operator
 void * operator new (size_t size) noexcept;
 // Array `new` operator
 void * operator new [] (size_t size) noexcept;
 // Placement `new` operator
-inline void * operator new (size_t size, void * ptr) noexcept {return ptr;}
+inline void * operator new (size_t, void * ptr) noexcept {return ptr;}
+// Override size `new` operator
+inline void * operator new (size_t, size_t size) noexcept {return operator new (size);}
 
 // Normal `delete` operator
 void operator delete (void * obj) noexcept;
 // Array `delete` operator
 void operator delete [] (void * obj) noexcept;
 // Placement `delete` operator - Only called when placement `new` fails
-inline void operator delete (void * obj, void * ptr) noexcept {}
-
-// Introducing std::terminate
-namespace std { [[noreturn]] void terminate() noexcept; }
+inline void operator delete (void * obj, void *) noexcept {}
+// Override size `delete` operator - Only called when override size `new` fails		<- Yes, this is "ill-formed" in C++14. Don't care, it'll work anyway
+inline void operator delete (void * obj, size_t) noexcept {operator delete (obj);}
 
 // Namespace "nx::type"
 namespace nx { namespace type {
@@ -54,10 +55,16 @@ template<typename T, typename... TS> inline T * createAt(T * ptr, TS ... args) n
 	return new (static_cast<void *>(ptr)) T(args...);
 }
 
+// Creates an array of objects (wraps a new array expression)
+template<typename T> inline T * createArray(size_t n) noexcept(noexcept(new T[n]))
+{
+	return new T[n];
+}
+
 // Creates an array of objects in place (with exception handling)
 template<typename T> inline T * createArrayAt(T * ptr, size_t n) noexcept(noexcept(new (nullptr) T()))
 {
-	if (noexcept(new (nullptr) T()))
+	if (noexcept(new (nullptr) T()) || !exceptions)
 	{
 		for (size_t i = 0; i < n; ++ i)
 			new (ptr + i) T;
@@ -66,23 +73,23 @@ template<typename T> inline T * createArrayAt(T * ptr, size_t n) noexcept(noexce
 	else
 	{
 		size_t i = 0;
-		try
+		__nx_try
 		{
 			for (; i < n; ++ i)
 				new (ptr + i) T;
 		}
-		catch (...)
+		__nx_catch (...)
 		{
-			try
+			__nx_try
 			{
 				for (; i < n; -- i)
 					(ptr + i)->~T();
 			}
-			catch (...)
+			__nx_catch (...)
 			{
 				std::terminate();
 			}
-			throw;
+			__nx_throw();
 		}
 		return ptr;
 	}
@@ -100,13 +107,43 @@ template<typename T> inline void destroyAt(T * ptr) noexcept(noexcept(ptr->~T())
 	ptr->~T();
 }
 
-// Destroys an array of objects in place
-template<typename T> inline void destroyArrayAt(T * ptr, size_t n)
+// Destroys an array of objects (wraps a delete array expression)
+template<typename T> inline void destroyArray(T * ptr, size_t n) noexcept(noexcept(delete [] ptr))
 {
-	for (size_t i = n-1; i < n; -- i)
-		(ptr + i)->~T();
+	delete [] ptr;
 }
 
+// Destroys an array of objects in place
+template<typename T> inline void destroyArrayAt(T * ptr, size_t n) noexcept(noexcept(ptr->~T()))
+{
+	if (noexcept(ptr->~T()) || !exceptions)
+	{
+		for (size_t i = n-1; i < n; -- i)
+			(ptr + i)->~T();
+	}
+	else
+	{
+		size_t i = n-1;
+		__nx_try
+		{
+			for (; i < n; -- i)
+				(ptr + i)->~T();
+		}
+		__nx_catch (...)
+		{
+			__nx_try
+			{
+				for (-- i; i < n; -- i)
+					(ptr + i)->~T();
+			}
+			__nx_catch (...)
+			{
+				std::terminate();
+			}
+			__nx_throw();
+		}
+	}
+}
 
 // Close namespace "nx::type"
 }}
