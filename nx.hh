@@ -13,7 +13,7 @@ namespace nx {
 using byte = unsigned char;
 using uint = unsigned int;
 
-// Base class for reference type classes (as oppposed to value type ones)
+// Object class - Base of role like types (as opposed value like types)
 class Object
 {
 public:
@@ -27,105 +27,11 @@ public:
 Object::Object() = default;
 Object::~Object() = default;
 
-// Open variation of unique_ptr, the inner pointer is public and freely accessable
-template<typename T> struct UniquePtr
-{
-	// Referenced Type
-	using Type = T;
-	
-	// Constructors & destructors
-	UniquePtr()
-		: data(nullptr) {}
-	explicit UniquePtr(T * ptr)
-		: data(ptr) {}
-	~UniquePtr()
-		{delete data;}
-	
-	// Copy operators deleted
-	UniquePtr(const UniquePtr<T> &) = delete;
-	UniquePtr<T> & operator = (const UniquePtr<T> &) = delete;
-	
-	// Move operators
-	UniquePtr(UniquePtr<T> && ptr)
-		: data(ptr.release()) {}
-	UniquePtr<T> & operator = (UniquePtr<T> && ptr)
-		{return this->reset(ptr.release());}
-
-	// Template move operators
-	template<typename U> UniquePtr(UniquePtr<U> && ptr)
-		: data(ptr.release()) {}
-	template<typename U> UniquePtr<T> & operator = (UniquePtr<U> && ptr)
-		{return this->reset(ptr.release());}
-	
-	// Operators & methods
-	T * release()
-		{T * ptr = data; data = nullptr; return ptr;}
-	UniquePtr<T> & reset(T * ptr = nullptr)
-		{delete data; data = ptr; return * this;}
-	T * operator -> () const
-		{return data;}
-	T & operator * () const
-		{return * data;}
-	T & access() const
-		{return * data;}
-	
-	// Referenced Data
-	T * data;
-};
-
-// Open variation of unique_ptr for arrays, the inner pointer is public and freely accessable
-template<typename T> struct UniquePtr<T[]>
-{
-	// Referenced Type
-	using Type = T;
-	
-	// Constructors & Destructors
-	UniquePtr()
-		: data(nullptr) {}
-	explicit UniquePtr(T * ptr)
-		: data(ptr) {}
-	~UniquePtr()
-		{delete [] data;}
-	
-	// Copy operators deleted
-	UniquePtr(const UniquePtr<T[]> &) = delete;
-	UniquePtr<T[]> & operator = (const UniquePtr<T[]> &) = delete;
-
-	// Move operators
-	UniquePtr(UniquePtr<T[]> && ptr)
-		: data(ptr.release()) {}
-	UniquePtr<T> & operator = (UniquePtr<T[]> && ptr)
-		{return this->reset(ptr.release());}
-
-	// Template move operators
-	template<typename U> UniquePtr(UniquePtr<U> && ptr)
-		: data(ptr.release()) {}
-	template<typename U> UniquePtr<T[]> & operator = (UniquePtr<U> && ptr)
-		{return this->reset(ptr.release());}
-
-	// Operators & Methods
-	T * release()
-		{T * ptr = data; data = nullptr; return ptr;}
-	UniquePtr<T[]> & reset(T * ptr = nullptr)
-		{delete [] data; data = ptr; return * this;}
-	T & operator [] (size_t i) const
-		{return data[i];}
-	
-	// Referenced Data
-	T * data;
-};
-
-// creates a new object, wrapped in a UniquePtr
-template<typename T, typename ... TS> inline UniquePtr<T> make(TS ... args)
-{
-	return UniquePtr<T>(new T(static_cast<TS>(args)...));
-}
-
-// Array class
+// Array class - Java like array type (dynamically allocated on the heap, cannot be resized)
 template<typename T> struct Array
 {
-	// Types
-	using Element = T;
+	// Element type
+	using Type = T;
 	
 	// Fields
 	const size_t length;
@@ -137,11 +43,26 @@ template<typename T> struct Array
 	// Allocator
 	static Array<T> * create(size_t n);
 	// Destructor
-	~Array();
+	~Array()
+		{nx::type::destroyArrayAt<T>(data, length);}
 	
 	// Copy operators deleted
 	Array(const Array &) = delete;
-	Array<T> & operator = (const Array &) = delete;	
+	Array<T> & operator = (const Array &) = delete;
+	
+	// Operators & methods
+	inline T * begin()
+		{return data;}
+	inline const T * begin() const
+		{return data;}
+	inline T * end()
+		{return data + length;}
+	inline const  T * end() const
+		{return data + length;}
+	inline T & operator [] (size_t i)
+		{return data[i];}
+	inline const T & operator [] (size_t i) const
+		{return data[i];}		
 };
 
 template<typename T> Array<T> * Array<T>::create(size_t n)
@@ -156,10 +77,98 @@ template<typename T> Array<T> * Array<T>::create(size_t n)
 	return array;
 }
 
-template<typename T> Array<T>::~Array()
+// Open variation of unique_ptr, the inner pointer is public and freely accessable
+template<typename T> struct UniquePtr
 {
-	// destroy elements
-	nx::type::destroyArrayAt<T>(this->data, this->length);
+	// Referenced type
+	using Type = T;
+	
+	// Constructors & destructors
+	UniquePtr()
+		: pointer(nullptr) {}
+	explicit UniquePtr(T * ptr)
+		: pointer(ptr) {}
+	~UniquePtr()
+		{delete pointer;}
+	
+	// Copy operators deleted
+	UniquePtr(const UniquePtr<T> &) = delete;
+	UniquePtr<T> & operator = (const UniquePtr<T> &) = delete;
+	
+	// Move operators
+	UniquePtr(UniquePtr<T> && ptr)
+		: pointer(ptr.release()) {}
+	UniquePtr<T> & operator = (UniquePtr<T> && ptr)
+		{return reset(ptr.release());}
+
+	// Template move operators
+	template<typename U> UniquePtr(UniquePtr<U> && ptr)
+		: pointer(ptr.release()) {}
+	template<typename U> UniquePtr<T> & operator = (UniquePtr<U> && ptr)
+		{return reset(ptr.release());}
+	
+	// Operators & methods
+	T * release()
+		{T * ptr = pointer; pointer = nullptr; return ptr;}
+	UniquePtr<T> & reset(T * ptr = nullptr)
+		{delete pointer; pointer = ptr; return * this;}
+	T * operator -> () const
+		{return pointer;}
+	T & operator * () const
+		{return * pointer;}
+	T & access() const
+		{return * pointer;}
+	
+	// Raw pointer
+	T * pointer;
+};
+
+// Open variation of unique_ptr for arrays, the inner pointer is public and freely accessable
+template<typename T> struct UniquePtr<T[]>
+{
+	// Referenced type
+	using Type = T;
+	
+	// Constructors & Destructors
+	UniquePtr()
+		: pointer(nullptr) {}
+	explicit UniquePtr(T * ptr)
+		: pointer(ptr) {}
+	~UniquePtr()
+		{delete [] pointer;}
+	
+	// Copy operators deleted
+	UniquePtr(const UniquePtr<T[]> &) = delete;
+	UniquePtr<T[]> & operator = (const UniquePtr<T[]> &) = delete;
+
+	// Move operators
+	UniquePtr(UniquePtr<T[]> && ptr)
+		: pointer(ptr.release()) {}
+	UniquePtr<T> & operator = (UniquePtr<T[]> && ptr)
+		{return this->reset(ptr.release());}
+
+	// Template move operators
+	template<typename U> UniquePtr(UniquePtr<U> && ptr)
+		: pointer(ptr.release()) {}
+	template<typename U> UniquePtr<T[]> & operator = (UniquePtr<U> && ptr)
+		{return this->reset(ptr.release());}
+
+	// Operators & methods
+	T * release()
+		{T * ptr = pointer; pointer = nullptr; return ptr;}
+	UniquePtr<T[]> & reset(T * ptr = nullptr)
+		{delete [] pointer; pointer = ptr; return * this;}
+	T & operator [] (size_t i) const
+		{return pointer[i];}
+	
+	// Raw pointer
+	T * pointer;
+};
+
+// creates a new object, wrapped in a UniquePtr
+template<typename T, typename ... TS> inline UniquePtr<T> make(TS ... args)
+{
+	return UniquePtr<T>(new T(static_cast<TS>(args)...));
 }
 
 // creates a new array, wrapped in a UniquePtr
