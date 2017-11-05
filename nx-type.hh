@@ -4,6 +4,10 @@
 // Local includes
 #include "nx-new.hh"
 
+// Disable false warnings in header
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
+
 // Namespace "nx"
 namespace nx {
 	
@@ -43,10 +47,8 @@ public:
 	
 	// Fields
 	const size_t length;
-	T data[0];	// Yes, I know not vaild in C++. Whatever! It should be.
+	T data[0];	// Yes, I know, not valid in C++. Whatever! It should be.
 	
-	// Allocator
-	static Array<T> * create(size_t n);
 	// Destructor
 	~Array() override
 		{nx::type::destroyArrayAt<T>(data, length);}
@@ -65,8 +67,11 @@ public:
 	inline const T & operator [] (size_t i) const
 		{return data[i];}
 		
+	// Allocators
+	static Array<T> * create(size_t n);
+		
 private:
-	// Constructor
+	// Constructors
 	Array(size_t n)
 		: length(n) {}
 };
@@ -82,7 +87,7 @@ template<typename T> Array<T> * Array<T>::create(size_t n)
 	return array;
 }
 
-// List class - Dynamically resizable arrays
+// List class - Dynamically resizable arrays -- TODO: concurrent lock free
 template<typename T> class List: public Object
 {
 public:
@@ -90,25 +95,27 @@ private:
 	Array<T> * array;
 };
 
-// Dictionary class - Associative array, map, or dictionary
+// Dictionary class - Associative array, map, or dictionary -- TODO: concurrect lock free
 template<typename K, typename V> class Dictionary: public Object
 {
 public:
-	// Entry type
-	class Entry
-	{
-		K key;
-		V value;
-	};
+	// Constructors & destructors
+	Dictionary()
 	
 	
 
 private:
-	K * keys;
-	V * values;
-	size_t * hashes;
-	size_t * indices;
+	// TODO: key & hash function
+
+	// 
+	Array<K> * keys;
+	Array<V> * values;
+	Array<size_t> * hashes;
+	Array<size_t> * indices;
 };
 
 // Close namespace "nx"
 }
+
+// Reset warnings
+#pragma GCC diagnostic pop

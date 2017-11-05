@@ -4,6 +4,10 @@
 // Local includes
 #include "nx-core.hh"
 
+// Disable false warnings in header
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wc++14-compat"
+
 // Normal `new` operator
 void * operator new (size_t size) noexcept;
 // Array `new` operator
@@ -147,3 +151,6 @@ template<typename T> inline void destroyArrayAt(T * ptr, size_t n) noexcept(noex
 
 // Close namespace "nx::type"
 }}
+
+// Reset warnings
+#pragma GCC diagnostic pop

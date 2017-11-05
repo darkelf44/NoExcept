@@ -5,9 +5,6 @@
 #include <stddef.h>
 #include <stdint.h>
 
-// Don't warn about C++14, when I'm *NOT* using C++14 !!! (Stupid compiler)
-#pragma GCC diagnostic ignored "-Wc++14-compat"
-
 // Support compiling with and without exceptions
 #ifdef __EXCEPTIONS
 	#define __nx_try	try
