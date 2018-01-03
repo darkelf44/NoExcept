@@ -48,15 +48,15 @@ template<typename T> inline T * free(T * obj) noexcept
 }
 
 // Creates a single object (wraps a new expression)
-template<typename T, typename... TS> inline T * create(TS ... args) noexcept(noexcept(new T(args...)))
+template<typename T, typename... TS> inline T * create(TS && ... args) noexcept(noexcept(new T(static_cast<TS &&>(args)...)))
 {
-	return new T(args...);
+	return new T(static_cast<TS &&>(args)...);
 }
 
 // Creates a single opject in place (wraps a placement new expression)
-template<typename T, typename... TS> inline T * createAt(T * ptr, TS ... args) noexcept(noexcept(new (nullptr) T(args...)))
+template<typename T, typename... TS> inline T * createAt(T * ptr, TS && ... args) noexcept(noexcept(new (nullptr) T(static_cast<TS &&>(args)...)))
 {
-	return new (static_cast<void *>(ptr)) T(args...);
+	return new (static_cast<void *>(ptr)) T(static_cast<TS &&>(args)...);
 }
 
 // Creates an array of objects (wraps a new array expression)
@@ -97,6 +97,35 @@ template<typename T> inline T * createArrayAt(T * ptr, size_t n) noexcept(noexce
 		}
 		return ptr;
 	}
+}
+
+// Creates an array of objects in place, and uses a list to initialize them
+template<typename T, typename... TS> inline T * createArrayAtFrom(T * ptr, TS && ... list) noexcept(noexcept(new (nullptr) T(param<T &&>())))
+{
+	constexpr size_t n = sizeof...(list);
+	// Unpack list elements into a temporary array (TODO: find a way to do this without the temporary array)
+	T init[] = {static_cast<TS &&>(list) ...};
+	// Construct elements
+	size_t i = 0;
+	__nx_try
+	{
+		for (; i < n; ++ i)
+			new (ptr + i) T(static_cast<T &&>(init[i]));
+	}
+	__nx_catch (...)
+	{
+		__nx_try
+		{
+			for (; i < n; -- i)
+				(ptr + i)->~T();
+		}
+		__nx_catch (...)
+		{
+			std::terminate();
+		}
+		__nx_throw();
+	}
+	return ptr;
 }
 
 // Destroys a single object (wraps a delete expression)

@@ -95,20 +95,23 @@ template<typename T> struct UniquePtr<T[]>
 	T * pointer;
 };
 
-// creates a new object, wrapped in a UniquePtr
+// Creates a new object, wrapped in a UniquePtr
 template<typename T, typename ... TS> inline UniquePtr<T> make(TS && ... args)
 {
 	return UniquePtr<T>(new T(static_cast<TS &&>(args)...));
 }
 
-// creates a new array, wrapped in a UniquePtr
+// Creates a new array, wrapped in a UniquePtr
 template<typename T> inline UniquePtr<Array<T>> makeArray(size_t n)
 {
 	return UniquePtr<Array<T>>(Array<T>::create(n));
 }
 
-// TODO:
-template<typename T, typename ... TS> inline UniquePtr<Array<T>> makeArrayFrom(TS && ... args);
+// Creates a new array from the given elements wrapped in a UniquePtr
+template<typename T, typename ... TS> inline UniquePtr<Array<T>> makeArrayFrom(TS && ... list)
+{
+	return UniquePtr<Array<T>>(Array<T>::createFrom(list...));
+}
 	
 // Close namespace "nx"
 }

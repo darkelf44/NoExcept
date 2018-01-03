@@ -68,7 +68,8 @@ public:
 		{return data[i];}
 		
 	// Allocators
-	static Array<T> * create(size_t n);
+	static Array<T> * create(size_t n);	
+	template<typename... TS> Array<T> * createFrom(TS && ... list);
 		
 private:
 	// Constructors
@@ -76,7 +77,7 @@ private:
 		: length(n) {}
 };
 
-// Array allocator - Rather that splitting the allocation logic, and creating a private constructor, I simply use 
+// Array allocator - creates a new array
 template<typename T> Array<T> * Array<T>::create(size_t n)
 {
 	// Allocate array with custom size
@@ -87,32 +88,16 @@ template<typename T> Array<T> * Array<T>::create(size_t n)
 	return array;
 }
 
-// List class - Dynamically resizable arrays -- TODO: concurrent lock free
-template<typename T> class List: public Object
+template<typename T> template<typename... TS> Array<T> * Array<T>::createFrom(TS && ... list)
 {
-public:
-private:
-	Array<T> * array;
-};
-
-// Dictionary class - Associative array, map, or dictionary -- TODO: concurrect lock free
-template<typename K, typename V> class Dictionary: public Object
-{
-public:
-	// Constructors & destructors
-	Dictionary()
-	
-	
-
-private:
-	// TODO: key & hash function
-
-	// 
-	Array<K> * keys;
-	Array<V> * values;
-	Array<size_t> * hashes;
-	Array<size_t> * indices;
-};
+	constexpr size_t n = sizeof...(list);
+	// Allocate array with custom size
+	auto * array = new (sizeof(Array<T>) + n * sizeof(T)) Array<T>(n);
+	// Create array elements
+	nx::type::createArrayAtFrom<T>(array->data, list...);
+	// Return array
+	return array;
+}
 
 // Close namespace "nx"
 }

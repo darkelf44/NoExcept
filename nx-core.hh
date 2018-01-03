@@ -5,8 +5,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-// Support compiling with and without exceptions
-#ifdef __EXCEPTIONS
+// Support compiling without exceptions (gcc only)
+#if !defined(__GNUC__) || defined(__EXCEPTIONS)
 	#define __nx_try	try
 	#define __nx_catch(x)	catch(x)
 	#define __nx_throw(x)	throw x
@@ -44,6 +44,13 @@ struct Object
 
 Object::Object() = default;
 Object::~Object() = default;
+
+// [FUNCTION] skip - A very useful function. It takes any number of arguments, and does absolutely nothing
+template<typename... TS> inline void skip(TS && ... args) noexcept
+	{ /* Do nothing */ }
+	
+// [FUNCTION] param - Intended for use in typeof/sizeof/noexcept expressions, creates a expression with the given type.
+template<typename T> T param() noexcept;
 
 // Close namespace "nx"
 }
