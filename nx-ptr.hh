@@ -46,6 +46,8 @@ template<typename T> struct UniquePtr
 		{return pointer;}
 	T & operator * () const
 		{return * pointer;}
+	T * get() const
+		{return pointer;}
 	T & access() const
 		{return * pointer;}
 	
@@ -112,6 +114,6 @@ template<typename T, typename ... TS> inline UniquePtr<Array<T>> makeArrayFrom(T
 {
 	return UniquePtr<Array<T>>(Array<T>::createFrom(list...));
 }
-	
+
 // Close namespace "nx"
 }

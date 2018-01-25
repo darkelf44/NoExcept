@@ -70,7 +70,11 @@ public:
 	// Allocators
 	static Array<T> * create(size_t n);	
 	template<typename... TS> Array<T> * createFrom(TS && ... list);
-		
+	
+	// Class methods
+	static void copy(const Array<T> & src, Array<T> & dest, size_t n);
+	static void copy(const Array<T> & src, size_t i, Array<T> & dest, size_t j, size_t n);
+	
 private:
 	// Constructors
 	Array(size_t n)
@@ -88,15 +92,24 @@ template<typename T> Array<T> * Array<T>::create(size_t n)
 	return array;
 }
 
+// Array allocator - creates a new array from a list of elements
 template<typename T> template<typename... TS> Array<T> * Array<T>::createFrom(TS && ... list)
 {
 	constexpr size_t n = sizeof...(list);
 	// Allocate array with custom size
 	auto * array = new (sizeof(Array<T>) + n * sizeof(T)) Array<T>(n);
 	// Create array elements
-	nx::type::createArrayAtFrom<T>(array->data, list...);
+	nx::type::createArrayAtFromList<T>(array->data, list...);
 	// Return array
 	return array;
+}
+
+// Copy arrays
+template<typename T> void Array<T>::copy(const Array<T> & src, Array<T> & dest, size_t n)
+	{copy(src, 0, dest, 0, n);}
+template<typename T> void Array<T>::copy(const Array<T> & src, size_t i, Array<T> & dest, size_t j, size_t n)
+{
+	// TODO: Implement this
 }
 
 // Close namespace "nx"
