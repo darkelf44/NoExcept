@@ -10,7 +10,121 @@
 
 // Namespace "nx"
 namespace nx {
-	
+
+// Namespace "nx::type" - Type system related functionality
+namespace type {
+
+// Namespace "nx::type::proto" - Naked C++ meta function, without wrappers
+namespace proto {
+
+// [META FUNCTION] EnableIf - Enables template function, if the condition is true1
+template<bool b, typename T> struct EnableIf {};
+template<typename T> struct EnableIf<true, T> { using Result = T; };
+
+
+// [META FUNCTION] IsConstant
+template<typename T> struct IsConstant { static constexpr bool result = false; };
+template<typename T> struct IsConstant<const T> { static constexpr bool result = true; };
+
+// [META FUNCTION] IsVolatile
+template<typename T> struct IsVolatile { static constexpr bool result = false; };
+template<typename T> struct IsVolatile<volatile T> { static constexpr bool result = true; };
+
+// [META FUNCTION] IsPointer
+template<typename T> struct IsPointer { static constexpr bool result = false; };
+template<typename T> struct IsPointer<T *> { static constexpr bool result = true; };
+
+// [META FUNCTION] IsReference
+template<typename T> struct IsReference { static constexpr bool result = false; };
+template<typename T> struct IsReference<T &> { static constexpr bool result = true; };
+
+// [META FUNCTION] IsLValueReference
+template<typename T> struct IsLValueReference { static constexpr bool result = IsReference<T>::result; };
+
+// [META FUNCTION] IsRValueReference
+template<typename T> struct IsRValueReference { static constexpr bool result = false; };
+template<typename T> struct IsRValueReference<T &&> { static constexpr bool result = true; };
+
+// [META FUNCTION] IsAnyReference
+template<typename T> struct IsAnyReference { static constexpr bool result = IsReference<T>::result || IsRValueReference<T>::result; };
+
+
+// [META FUNCTION] RemoveConstant
+template<typename T> struct RemoveConstant { using Result = T; };
+template<typename T> struct RemoveConstant<const T> { using Result = T; };
+
+// [META FUNCTION] RemoveVolatile
+template<typename T> struct RemoveVolatile { using Result = T; };
+template<typename T> struct RemoveVolatile<volatile T> { using Result = T; };
+
+// [META FUNCTION] RemoveQualifiers
+template<typename T> struct RemoveQualifiers { using Result = T; };
+template<typename T> struct RemoveQualifiers<const T> { using Result = T; };
+template<typename T> struct RemoveQualifiers<volatile T> { using Result = T; };
+template<typename T> struct RemoveQualifiers<const volatile T> { using Result = T; };
+
+// [META FUNCTION] RemovePointer
+template<typename T> struct RemovePointer { using Result = T; };
+template<typename T> struct RemovePointer<T *> { using Result = T; };
+
+// [META FUNCTION] RemoveReference
+template<typename T> struct RemoveReference { using Result = T; };
+template<typename T> struct RemoveReference<T &> { using Result = T; };
+
+// [META FUNCTION] RemoveLValueReference
+template<typename T> struct RemoveLValueReference { using Result = typename RemoveReference<T>::Result; };
+
+// [META FUNCTION] RemoveReference
+template<typename T> struct RemoveRValueReference { using Result = T; };
+template<typename T> struct RemoveRValueReference<T &&> { using Result = T; };
+
+// [META FUNCTION] RemoveAnyReference
+template<typename T> struct RemoveAnyReference { using Result = T; };
+template<typename T> struct RemoveAnyReference<T &> { using Result = T; };
+template<typename T> struct RemoveAnyReference<T &&> { using Result = T; };
+
+// [META FUNCTION] Strip
+template<typename T> struct Strip { using Result = typename RemoveQualifiers<typename RemoveAnyReference<T>::Result>::Result; };
+
+// Close namespace "nx::type::proto"
+}
+
+template<bool b, typename T> using EnableIf = typename nx::type::proto::EnableIf<b, T>::Result;
+
+template<typename T> inline constexpr bool isConstant()
+	{ return nx::type::proto::IsConstant<T>::result; }
+template<typename T> inline constexpr bool isVolatile()
+	{ return nx::type::proto::IsVolatile<T>::result; }
+
+template<typename T> inline constexpr bool isPointer()
+	{ return nx::type::proto::IsPointer<T>::result; }
+template<typename T> inline constexpr bool isReference()
+	{ return nx::type::proto::IsReference<T>::result; }
+template<typename T> inline constexpr bool isLValueReference()
+	{ return nx::type::proto::IsReference<T>::result; }
+template<typename T> inline constexpr bool isRValueReference()
+	{ return nx::type::proto::IsRValueReference<T>::result; }
+template<typename T> inline constexpr bool isAnyReference()
+	{ return nx::type::proto::IsReference<T>::result || nx::type::proto::IsRValueReference<T>::result; }
+
+template<typename T> using RemoveConstant = typename nx::type::proto::RemoveConstant<T>::Result;
+template<typename T> using RemoveVolatile = typename nx::type::proto::RemoveVolatile<T>::Result;
+template<typename T> using RemoveQualifiers = typename nx::type::proto::RemoveQualifiers<T>::Result;
+
+template<typename T> using RemovePointer = typename nx::type::proto::RemovePointer<T>::Result;
+template<typename T> using RemoveReference = typename nx::type::proto::RemoveReference<T>::Result;
+template<typename T> using RemoveLValueReference = typename nx::type::proto::RemoveReference<T>::Result;
+template<typename T> using RemoveRValueReference = typename nx::type::proto::RemoveRValueReference<T>::Result;
+template<typename T> using RemoveAnyReference = typename nx::type::proto::RemoveAnyReference<T>::Result;
+
+template<typename T> using Strip = typename RemoveQualifiers<typename RemoveAnyReference<T>::Result>::Result;
+
+// Close namespace "nx::type"	
+}
+
+// Add "EnableIf" to the "nx" namespace
+template<bool b, typename T> using EnableIf = typename nx::type::proto::EnableIf<b, T>::Result;
+
 // Multi class - Multiple consecutive elements of the same type, or a fixed size array type
 template<typename T, size_t N> struct Multi
 {
@@ -85,8 +199,12 @@ private:
 template<typename T> Array<T> * Array<T>::create(size_t n)
 {
 	// Allocate array with custom size
-	auto * array = new (sizeof(Array<T>) + n * sizeof(T)) Array<T>(n);
-	// Create array elements
+	auto * array = nx::type::alloc<Array<T>>(sizeof(Array<T>) + n * sizeof(T));
+	// Return null, if the allocation failed
+	if (!array) return nullptr;
+	// Create array (needs to be done in this function, because constructor is private)
+	new (static_cast<void *>(array)) Array<T>(n);
+	// Create elements
 	nx::type::createArrayAt<T>(array->data, n);
 	// Return array
 	return array;
@@ -97,8 +215,12 @@ template<typename T> template<typename... TS> Array<T> * Array<T>::createFrom(TS
 {
 	constexpr size_t n = sizeof...(list);
 	// Allocate array with custom size
-	auto * array = new (sizeof(Array<T>) + n * sizeof(T)) Array<T>(n);
-	// Create array elements
+	auto * array = nx::type::alloc<Array<T>>(sizeof(Array<T>) + n * sizeof(T));
+	// Return null, if the allocation failed
+	if (!array) return nullptr;
+	// Create array (needs to be done in this function, because constructor is private)
+	new (static_cast<void *>(array)) Array<T>(n);
+	// Create elements
 	nx::type::createArrayAtFromList<T>(array->data, list...);
 	// Return array
 	return array;

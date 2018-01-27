@@ -4,30 +4,19 @@
 // Local includes
 #include "nx-core.hh"
 
-// Disable false warnings in header
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wc++14-compat"
-
 // Normal `new` operator
 void * operator new (size_t size) noexcept;
 // Array `new` operator
 void * operator new [] (size_t size) noexcept;
 // Placement `new` operator
 inline void * operator new (size_t, void * ptr) noexcept {return ptr;}
-// Override size `new` operator
-inline void * operator new (size_t, size_t size) noexcept {return operator new (size);}
 
 // Normal `delete` operator
 void operator delete (void * obj) noexcept;
 // Array `delete` operator
 void operator delete [] (void * obj) noexcept;
 // Placement `delete` operator - Only called when placement `new` fails
-inline void operator delete (void * obj, void *) noexcept {}
-// Override size `delete` operator - Only called when override size `new` fails		<- Yes, this is "ill-formed" in C++14. Don't care, it'll work anyway
-inline void operator delete (void * obj, size_t) noexcept {operator delete (obj);}
-
-// Restore warnings
-#pragma GCC diagnostic pop
+inline void operator delete (void *, void *) noexcept {}
 
 // Namespace "nx::type"
 namespace nx { namespace type {
@@ -45,12 +34,12 @@ template<typename T> inline T * free(T * obj) noexcept
 }
 
 // Confirm that all memory was allocated. TODO: Throws <?> exception if any of the pointers are null
-template<typename... TS> inline bool confirm(const TS * ... expr)
+template<typename... TS> inline bool confirm(const TS * ... ptrs)
 {
 	// Extract parameter pack (I prefer this to recursion)
 	bool list = {ptrs ...};
 	// Check for null pointer
-	for (bool value : ptrs)
+	for (bool value : list)
 	{
 		if (!value)
 			std::terminate();
@@ -67,6 +56,12 @@ template<typename T, typename... TS> inline T * create(TS && ... args) noexcept(
 template<typename T, typename... TS> inline T * createAt(T * ptr, TS && ... args) noexcept(noexcept(new (nullptr) T(static_cast<TS &&>(args)...)))
 {
 	return new (static_cast<void *>(ptr)) T(static_cast<TS &&>(args)...);
+}
+
+// Create a single object with a custom size
+template<typename T, typename... TS> inline T * createWithSize(size_t size, TS && ... args) noexcept(noexcept(new (nullptr) T(static_cast<TS &&>(args)...)))
+{
+	return new (alloc<void*>(size)) T(static_cast<TS &&>(args)...);
 }
 
 // Create an array of objects (wraps a new array expression)

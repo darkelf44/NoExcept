@@ -51,6 +51,16 @@ template<typename T> struct UniquePtr
 	T & access() const
 		{return * pointer;}
 	
+	// Support postfix operators of underlying type [], (), (except if the underlying type is a pointer)
+	template<typename I> auto index(I && i) -> EnableIf<!nx::type::isPointer<T>(), decltype(param<T>()[param<I &&>()])> const
+		{return (*pointer)[static_cast<I &&>(i)];}
+	template<typename... TS> auto call(TS && ... args) -> EnableIf<!nx::type::isPointer<T>(), decltype(param<T>()(param<TS &&>()...))> const
+		{return (*pointer)(args...);}
+	template<typename I> auto operator [] (I i) -> EnableIf<!nx::type::isPointer<T>(), decltype(param<T>()[param<I &&>()])> const
+		{return (*pointer)[static_cast<I &&>(i)];}
+	template<typename... TS> auto operator () (TS && ... args) -> EnableIf<!nx::type::isPointer<T>(), decltype(param<T>()(param<TS &&>()...))> const
+		{return (*pointer)(static_cast<TS &&>(args)...);}
+	
 	// Raw pointer
 	T * pointer;
 };
