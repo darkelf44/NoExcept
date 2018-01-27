@@ -1,0 +1,12 @@
+bin/
+lib/
+obj/
+test/bin/
+test/lib/
+test/obj/
+*.o
+*.a
+*.obj
+*.lib
+*.exe
+*.out
