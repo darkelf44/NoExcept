@@ -160,7 +160,7 @@ template<typename T, typename... TS> inline T * createArrayAtFromList(T * ptr, T
 	// Unpack list elements into a temporary array (TODO: find a way to do this without the temporary array)
 	T init[] = {static_cast<TS &&>(list) ...};
 	// Construct elements from temporary array
-	return createArrayAtFromMove(ptr, init, n);
+	return createArrayAtByMove(ptr, init, n);
 }
 
 

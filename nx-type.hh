@@ -17,35 +17,42 @@ namespace type {
 // Namespace "nx::type::proto" - Naked C++ meta function, without wrappers
 namespace proto {
 
-// [META FUNCTION] EnableIf - Enables template function, if the condition is true1
+// [META FUNCTION] Id - Identity function, returns the given type. Useful for preventing type deduction
+template<typename T> struct Id { using Result = T; };
+
+// [META FUNCTION] EnableIf - Enables template function, if the condition is true
 template<bool b, typename T> struct EnableIf {};
 template<typename T> struct EnableIf<true, T> { using Result = T; };
 
 
-// [META FUNCTION] IsConstant
+// [META FUNCTION] IsConstant - True, if the type is const qualified
 template<typename T> struct IsConstant { static constexpr bool result = false; };
 template<typename T> struct IsConstant<const T> { static constexpr bool result = true; };
 
-// [META FUNCTION] IsVolatile
+// [META FUNCTION] IsVolatile - True, if the type is volatile qualified
 template<typename T> struct IsVolatile { static constexpr bool result = false; };
 template<typename T> struct IsVolatile<volatile T> { static constexpr bool result = true; };
 
-// [META FUNCTION] IsPointer
+// [META FUNCTION] IsVolatile - True, if the type is const or volatile qualified
+template<typename T> struct IsQualified { static constexpr bool result = IsConstant<T>::result || IsVolatile<T>::result; };
+
+
+// [META FUNCTION] IsPointer - True, if the type is a pointer
 template<typename T> struct IsPointer { static constexpr bool result = false; };
 template<typename T> struct IsPointer<T *> { static constexpr bool result = true; };
 
-// [META FUNCTION] IsReference
+// [META FUNCTION] IsReference - True, if the type is a normal, lvalue reference
 template<typename T> struct IsReference { static constexpr bool result = false; };
 template<typename T> struct IsReference<T &> { static constexpr bool result = true; };
 
-// [META FUNCTION] IsLValueReference
+// [META FUNCTION] IsLValueReference - True, if the type is a normal, lvalue reference
 template<typename T> struct IsLValueReference { static constexpr bool result = IsReference<T>::result; };
 
-// [META FUNCTION] IsRValueReference
+// [META FUNCTION] IsRValueReference - True, if the type is an rvalue reference
 template<typename T> struct IsRValueReference { static constexpr bool result = false; };
 template<typename T> struct IsRValueReference<T &&> { static constexpr bool result = true; };
 
-// [META FUNCTION] IsAnyReference
+// [META FUNCTION] IsAnyReference - True if the type if either type of reference
 template<typename T> struct IsAnyReference { static constexpr bool result = IsReference<T>::result || IsRValueReference<T>::result; };
 
 
@@ -62,6 +69,7 @@ template<typename T> struct RemoveQualifiers { using Result = T; };
 template<typename T> struct RemoveQualifiers<const T> { using Result = T; };
 template<typename T> struct RemoveQualifiers<volatile T> { using Result = T; };
 template<typename T> struct RemoveQualifiers<const volatile T> { using Result = T; };
+
 
 // [META FUNCTION] RemovePointer
 template<typename T> struct RemovePointer { using Result = T; };
@@ -83,19 +91,26 @@ template<typename T> struct RemoveAnyReference { using Result = T; };
 template<typename T> struct RemoveAnyReference<T &> { using Result = T; };
 template<typename T> struct RemoveAnyReference<T &&> { using Result = T; };
 
-// [META FUNCTION] Strip
+// [META FUNCTION] Strip - Remove all qualifiers and references from the type (eg. "const volatile int &&" -> "int")
 template<typename T> struct Strip { using Result = typename RemoveQualifiers<typename RemoveAnyReference<T>::Result>::Result; };
 
 // Close namespace "nx::type::proto"
 }
 
+// [FUNCTION] typeid - returns a unique integer id for a type
+template<typename T> inline uintptr_t typeid()
+	{ static void * id; return reinterpret_cast<uintptr_t>(&id); }
+
+template<typename T> using Id = T;
 template<bool b, typename T> using EnableIf = typename nx::type::proto::EnableIf<b, T>::Result;
 
 template<typename T> inline constexpr bool isConstant()
 	{ return nx::type::proto::IsConstant<T>::result; }
 template<typename T> inline constexpr bool isVolatile()
 	{ return nx::type::proto::IsVolatile<T>::result; }
-
+template<typename T> inline constexpr bool isQualified()
+	{ return nx::type::proto::IsConstant<T>::result || nx::type::proto::IsVolatile<T>::result; }
+	
 template<typename T> inline constexpr bool isPointer()
 	{ return nx::type::proto::IsPointer<T>::result; }
 template<typename T> inline constexpr bool isReference()
@@ -123,7 +138,10 @@ template<typename T> using Strip = typename RemoveQualifiers<typename RemoveAnyR
 }
 
 // Add "EnableIf" to the "nx" namespace
-template<bool b, typename T> using EnableIf = typename nx::type::proto::EnableIf<b, T>::Result;
+using nx::type::EnableIf;
+
+// Add "typeid" to the "nx" namespace
+using nx::type::typeid;
 
 // Multi class - Multiple consecutive elements of the same type, or a fixed size array type
 template<typename T, size_t N> struct Multi
@@ -183,7 +201,7 @@ public:
 		
 	// Allocators
 	static Array<T> * create(size_t n);	
-	template<typename... TS> Array<T> * createFrom(TS && ... list);
+	template<typename... TS> static Array<T> * createFrom(TS && ... list);
 	
 	// Class methods
 	static void copy(const Array<T> & src, Array<T> & dest, size_t n);

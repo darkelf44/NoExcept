@@ -5,7 +5,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-// Support compiling without exceptions (gcc only)
+// GCC (for some stupid reason) gives an error instead of a warning, when try/catch/throw is used, but exceptions are disabled.
 #if !defined(__GNUC__) || defined(__EXCEPTIONS)
 	#define __nx_try	try
 	#define __nx_catch(x)	catch(x)
@@ -19,6 +19,9 @@
 	// Exceptions are not supported, never use exception aware code
 	static constexpr bool exceptions = false;
 #endif
+
+// Removed keywords - by remapping these keywords, it is possible to use them as identifiers
+#define typeid __nx_typeid
 
 // Introducing std::terminate (needed for any code that works with exceptions)
 namespace std { [[noreturn]] void terminate() noexcept; }
