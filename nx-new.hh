@@ -26,6 +26,19 @@ inline void operator delete (void *, void *) noexcept {}
 // Namespace "nx::type"
 namespace nx { namespace type {
 
+// Check for noexcept constructor with the given types
+template<typename T, typename ... TS> constexpr bool isCreateNoexcept()
+	{return noexcept(new (nullptr) T(param<TS>() ...));}
+// Check for noexcept destructor
+template<typename T> constexpr bool isDestroyNoexcept()
+	{return noexcept(~T());}
+// Check for noexcept copy
+template<typename T> constexpr bool isCopyNoexcept()
+	{return noexcept(param<T &>() = param<T &>());}
+// Check for noexcept move
+template<typename T> constexpr bool isMoveNoexcept()
+	{return noexcept(param<T &>() = param<T &&>());}
+
 // Allocate memory for a type, without constructing them
 template<typename T> inline T * alloc(size_t size = sizeof(T)) noexcept
 {
@@ -42,7 +55,7 @@ template<typename T> inline T * free(T * obj) noexcept
 template<typename... TS> inline void confirm(const TS * ... ptrs)
 {
 	// Extract parameter pack (I prefer this to recursion)
-	bool list = {ptrs ...};
+	bool list[] = {ptrs ...};
 	// Check for null pointer
 	for (bool value : list)
 	{
@@ -78,6 +91,8 @@ template<typename T> inline T * createArray(size_t n) noexcept(noexcept(new T[n]
 // Create an array of objects in place (with exception handling)
 template<typename T> inline T * createArrayAt(T * ptr, size_t n) noexcept(noexcept(new (nullptr) T()))
 {
+	if (n == 0) return ptr;
+	
 	if (noexcept(new (nullptr) T()) || !exceptions)
 	{
 		for (size_t i = 0; i < n; ++ i)
@@ -112,6 +127,8 @@ template<typename T> inline T * createArrayAt(T * ptr, size_t n) noexcept(noexce
 // Create an array of objects in place, by copying from an other array
 template<typename T, typename... TS> inline T * createArrayAtByCopy(T * ptr, const T * array, size_t n) noexcept(noexcept(new (nullptr) T(param<const T &>())))
 {
+	if (n == 0) return ptr;
+	
 	if (noexcept(new (nullptr) T(param<const T &>())))
 	{
 		for (size_t i = 0; i < n; ++ i)
@@ -146,6 +163,8 @@ template<typename T, typename... TS> inline T * createArrayAtByCopy(T * ptr, con
 // Create an array of objects in place, by moving from an other array (if it can be safely moved, otherwise copy)
 template<typename T, typename... TS> inline T * createArrayAtByMove(T * ptr, T * array, size_t n) noexcept(noexcept(new (nullptr) T(param<T &&>())) || noexcept(new (nullptr) T(param<const T &>())))
 {
+	if (n == 0) return ptr;
+	
 	if (noexcept(new (nullptr) T(param<T &&>())) || !exceptions)
 	{
 		for (size_t i = 0; i < n; ++ i)
@@ -191,6 +210,8 @@ template<typename T> inline void destroyArray(T * ptr, size_t n) noexcept(noexce
 // Destroy an array of objects in place
 template<typename T> inline void destroyArrayAt(T * ptr, size_t n) noexcept(noexcept(ptr->~T()))
 {
+	if (n == 0) return;
+	
 	if (noexcept(ptr->~T()) || !exceptions)
 	{
 		for (size_t i = n-1; i < n; -- i)

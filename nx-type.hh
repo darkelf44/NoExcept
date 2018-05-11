@@ -134,6 +134,7 @@ template<typename T> using RemoveAnyReference = typename nx::type::proto::Remove
 
 template<typename T> using Strip = typename RemoveQualifiers<typename RemoveAnyReference<T>::Result>::Result;
 
+
 // Close namespace "nx::type"	
 }
 

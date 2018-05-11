@@ -3,7 +3,6 @@
 
 // Local includes
 #include "nx-type.hh"
-#include "nx-ptr.hh"
 
 // Namespace "nx"
 namespace nx {
@@ -89,8 +88,9 @@ template<typename T> void List<T>::reserve(size_t size)
 {
 	if (size > m)
 	{
-		UniquePtr<T> list = nx::type::alloc<T>(sizeof(T) * size);
-		nx::type::confirm(list.get());
+		List list;
+		list.data = nx::type::alloc<T>(sizeof(T) * size);
+		nx::type::confirm(list.data);
 		
 		if (data)
 		{
@@ -99,8 +99,9 @@ template<typename T> void List<T>::reserve(size_t size)
 			nx::type::free(data);
 		}
 		
-		data = list.release();
 		m = size;
+		data = list.data;
+		list.data = nullptr;
 	}
 }
 
@@ -108,18 +109,57 @@ template<typename T> void List<T>::compact()
 {
 	if (data)
 	{
-		UniquePtr<T> list = nx::type::alloc<T>(sizeof(T) * n);
+		List list;
+		list.data = nx::type::alloc<T>(sizeof(T) * n);
 		nx::type::confirm(list.get());
 		
 		nx::type::createArrayAtByMove(list.data, data, n);
 		nx::type::destroyArrayAt(data, n);
 		nx::type::free(data);
 		
-		data = list.release();
 		m = n;
+		data = list.data;
+		list.data = nullptr;
 	}
 }
 
+template<typename T> void List<T>::append(T && item)
+{
+	if (n + 1 > m)
+	{
+		// Exponential growth with a 1.5 base (starting from 16)
+		m = m > 16 ? m : 16; 
+		reserve(m + (m >> 1));
+	}
+	
+	data[n ++] = static_cast<T &&>(item);
+}
+
+template<typename T> void List<T>::append(const T & item)
+{
+	if (n + 1 > m)
+	{
+		// Exponential growth with a 1.5 base (starting from 16)
+		m = m > 16 ? m : 16; 
+		reserve(m + (m >> 1));
+	}
+	
+	data[n ++] = item;
+}
+
+template<typename T> void List<T>::extend(List<T> && list)
+{
+	if (n + list.n > m)
+	{
+	}
+	
+	if (nx::type::isCreateNoexcept<T>())
+	{
+	}
+	else
+	{
+	}
+}
 
 
 // Set class - TODO: concurrent, lock free, virtual interface
