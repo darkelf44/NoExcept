@@ -6,13 +6,10 @@
 #include <stdint.h>
 #include <stdarg.h>
 
-// C++ includes
-#include <exception>
-
-// GCC bug: snprintf is not in stdio.h
-#if defined(__GNUC__)
-	extern "C" int snprintf(char *, int, const char *, ...);
-#endif
+// Disable -Wformat, -Wformat-extra-args : gcc does not know how printf works
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat"
+#pragma GCC diagnostic ignored "-Wformat-extra-args"
 
 // Namespace "nx"
 namespace nx {
@@ -163,19 +160,14 @@ template<typename F, typename ... TS> bool Testing::run(Ring r, const char * nam
 	{
 		func(*this, static_cast<TS &&>(params) ...);
 	}
-	catch(std::exception & ex)
-	{
-		log("\tError: Unhandled std::exception: message: %s\n", ex.what());
-		rings[r].failed = true;
-	}
 	catch(...)
 	{
-		log("\tError: Unhandled exception!\n");
+		log("  Error: Unhandled exception!\n");
 		rings[r].failed = true;
 	}
 #endif
 	finish(r);
-	return true;
+	return !rings[r].failed;
 }
 
 
@@ -226,18 +218,18 @@ void Testing::start(Ring r, const char * name)
 	switch (r)
 	{
 		case TEST_CASE:
-			log("\t[ RUN     ] Running test case: %s\n", ring.testName);
+			log("  [ RUN     ] Running test case: %s\n", ring.testName);
 			break;
 			
 		case TEST_GROUP:
-			log("\t[ ------- ] Starting group: %s\n", ring.testName);
+			log("  [ ------- ] Starting group: %s\n", ring.testName);
 			break;
 			
 		case TEST_SESSION:
 			log("\n");
-			log("\t------------------------------------------------------------\n");
-			log("\t    Starting session: %s\n", ring.testName);
-			log("\t------------------------------------------------------------\n");
+			log("  ------------------------------------------------------------\n");
+			log("      Starting session: %s\n", ring.testName);
+			log("  ------------------------------------------------------------\n");
 			log("\n");
 			break;
 			
@@ -271,30 +263,30 @@ void Testing::finish(Ring r)
 		case TEST_CASE:
 			{
 				const char * status = ring.failed ? "[   FAIL! ]" : "[     OK! ]";
-				log("\t%s Finished! %d/%d passed (%d failed)\n", status, ring.success, ring.success + ring.failure, ring.failure);
+				log("  %s Finished! %d/%d passed (%d failed)\n", status, ring.success, ring.success + ring.failure, ring.failure);
 			}
 			break;
 		case TEST_GROUP:
 			{
 				const char * status = ring.failed ? "[ FAILURE ]" : "[ SUCCESS ]";
-				log("\t------------------------------------------------------------\n");
-				log("\t%s Finished group: %s: %d/%d passed (%d failed)\n", status, ring.testName, ring.success, ring.success + ring.failure, ring.failure);
-				log("\t------------------------------------------------------------\n");
+				log("  ------------------------------------------------------------\n");
+				log("  %s Finished group: %s: %d/%d passed (%d failed)\n", status, ring.testName, ring.success, ring.success + ring.failure, ring.failure);
+				log("  ------------------------------------------------------------\n");
 			}
 			break;
 		case TEST_SESSION:
 			{
 				const char * status = ring.failed ? "[ FAILURE ]" : "[ SUCCESS ]";
 				log("\n");
-				log("\t------------------------------------------------------------\n");
-				log("\t%s Finished session: %s: %d/%d passed (%d failed)\n", status, ring.testName, ring.success, ring.success + ring.failure, ring.failure);
-				log("\t------------------------------------------------------------\n");
+				log("  ------------------------------------------------------------\n");
+				log("  %s Finished session: %s: %d/%d passed (%d failed)\n", status, ring.testName, ring.success, ring.success + ring.failure, ring.failure);
+				log("  ------------------------------------------------------------\n");
 				log("\n");
 			}
 			break;
 			
 		default:;
-	}	
+	}
 }
 
 size_t Testing::toString(char * buffer, size_t n, bool value)
@@ -370,3 +362,6 @@ template<typename T> void expectEqual(typename nx::Testing::Id<const T &>::Resul
 		nx::Testing::get().log("Error: Assertion failed: Expected %s, got %s\n", valueTextBuffer, exprTextBuffer);
 	}
 }
+
+// Restore GCC diagnostic options
+#pragma GCC diagnostic pop

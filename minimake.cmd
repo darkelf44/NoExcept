@@ -40,7 +40,11 @@ del /Q test\obj\*
 ::%ARCHIVE% %LIBRARY% obj\nx-ini.o
 
 :: Test
-%MAKETEST% test\array-test.cc %TESTLIBS% -o test\bin\array-test.exe && test\bin\array-test.exe
-%MAKETEST% %ALTFLAGS% test\array-test.cc %TESTLIBS% -o test\bin\array-test-alt.exe && test\bin\array-test-alt.exe
+%MAKETEST% test\test-nx-type.cc %TESTLIBS% -o test\bin\test-nx-type.exe && test\bin\test-nx-type.exe
+%MAKETEST% %ALTFLAGS% test\test-nx-type.cc %TESTLIBS% -o test\bin\test-nx-type[alt].exe && test\bin\test-nx-type[alt].exe
+
+%MAKETEST% test\test-nx-util.cc %TESTLIBS% -o test\bin\test-nx-util.exe && test\bin\test-nx-util.exe
+%MAKETEST% %ALTFLAGS% test\test-nx-util.cc %TESTLIBS% -o test\bin\test-nx-util[alt].exe && test\bin\test-nx-util[alt].exe
+
 
 endlocal

@@ -4,6 +4,10 @@
 // Local includes
 #include "nx-core.hh"
 
+// Disable -Wterminate : gcc over warns on templates
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wterminate"
+
 // Normal `new` operator
 void * operator new (size_t size) noexcept;
 // Array `new` operator
@@ -17,6 +21,7 @@ void operator delete (void * obj) noexcept;
 void operator delete [] (void * obj) noexcept;
 // Placement `delete` operator - Only called when placement `new` fails
 inline void operator delete (void *, void *) noexcept {}
+
 
 // Namespace "nx::type"
 namespace nx { namespace type {
@@ -34,7 +39,7 @@ template<typename T> inline T * free(T * obj) noexcept
 }
 
 // Confirm that all memory was allocated. TODO: Throws <?> exception if any of the pointers are null
-template<typename... TS> inline bool confirm(const TS * ... ptrs)
+template<typename... TS> inline void confirm(const TS * ... ptrs)
 {
 	// Extract parameter pack (I prefer this to recursion)
 	bool list = {ptrs ...};
@@ -217,3 +222,6 @@ template<typename T> inline void destroyArrayAt(T * ptr, size_t n) noexcept(noex
 
 // Close namespace "nx::type"
 }}
+
+// Restore GCC diagnostic options
+#pragma GCC diagnostic pop
