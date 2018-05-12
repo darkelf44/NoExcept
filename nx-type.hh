@@ -101,7 +101,7 @@ template<typename T> struct Strip { using Result = typename RemoveQualifiers<typ
 template<typename T> inline uintptr_t typeid()
 	{ static void * id; return reinterpret_cast<uintptr_t>(&id); }
 
-template<typename T> using Id = T;
+template<typename T> using Id = typename nx::type::proto::Id<T>::Result;
 template<bool b, typename T> using EnableIf = typename nx::type::proto::EnableIf<b, T>::Result;
 
 template<typename T> inline constexpr bool isConstant()
@@ -143,6 +143,17 @@ using nx::type::EnableIf;
 
 // Add "typeid" to the "nx" namespace
 using nx::type::typeid;
+
+// [FUNCTION] lvalue - Turns anything into an rvalue (Hey, it can be useful)
+template<typename T> constexpr nx::type::RemoveAnyReference<T> & lvalue(T && value)
+	{ return static_cast<T &>(value); }
+// [FUNCTION] rvalue - Same as std::move, turns anything into an lvalue
+template<typename T> constexpr nx::type::RemoveAnyReference<T> && rvalue(T && value)
+	{ return static_cast<T &&>(value); }
+// [FUNCTION] forward - Same as std::forward, explicit cast to either rvalue or lvalue
+template<typename T> constexpr T && forward(nx::type::RemoveAnyReference<T> & value)
+	{ return static_cast<T &&>(value); }
+
 
 // Multi class - Multiple consecutive elements of the same type, or a fixed size array type
 template<typename T, size_t N> struct Multi
@@ -205,16 +216,16 @@ public:
 		{return data[i];}
 	
 	// Allocators
-	static Array<T> * create(size_t n);	
-	template<typename... TS> static Array<T> * createFrom(TS && ... list);
+	static Array * create(size_t n);	
+	template<typename... TS> static Array * createFrom(TS && ... list);
 	
 	// Fill arrays
-	static void fill(Array<T> & array, const T & item);
-	static void fill(Array<T> & array, size_t off, size_t len, const T & item);
+	static void fill(Array & array, const T & item);
+	static void fill(Array & array, size_t off, size_t len, const T & item);
 	
 	// Copy arrays
-	static void copy(const Array<T> & src, Array<T> & dest, size_t len);
-	static void copy(const Array<T> & src, size_t src_idx, Array<T> & dest, size_t dest_idx, size_t len);
+	static void copy(const Array & src, Array & dest, size_t len);
+	static void copy(const Array & src, size_t src_idx, Array & dest, size_t dest_idx, size_t len);
 	
 private:
 	// Constructors
@@ -222,15 +233,59 @@ private:
 		: length(n) {}
 };
 
+// Tuple class - only 2, 3 and 4 element tuples are defined here. For generic tuples include <nx-util.hh>
+template<typename ... TS> class Tuple;
+
+// Special tuples
+template<typename X, typename Y> using Pair = Tuple<X, Y>;
+template<typename X, typename Y, typename Z> using Trio = Tuple<X, Y, Z>;
+template<typename X, typename Y, typename Z, typename W> using Quad = Tuple<X, Y, Z, W>;
+
+// Pair class - Generic, two element structure
+template<typename X, typename Y> struct Tuple<X, Y>
+{
+	// Fields
+	X first;
+	Y second;
+	
+	// Constructors
+	Tuple() = default;
+	Tuple(Tuple &&) = default;
+	Tuple(const Tuple &) = default;
+	
+	template<typename T1, typename T2> Tuple(Tuple<T1, T2> && tuple)
+		: first(rvalue(tuple.first)), second(rvalue(tuple.second)) {}
+	template<typename T1, typename T2> Tuple(const Tuple<T1, T2> & tuple)
+		: first(tuple.first), second(tuple.second) {}
+	
+	template<typename T1, typename T2> Tuple(T1 && t1, T2 && t2)
+		: first(forward<T1 &&>(t1)), second(forward<T2 &&>(t2)) {}
+		
+	// Methods TODO: somehow implement the "at" method	
+	
+	// Copy and move
+	Tuple<X, Y> & operator = (Tuple &&) = default;
+	Tuple<X, Y> & operator = (const Tuple &) = default;
+	
+	template<typename T1, typename T2> Tuple & operator = (Tuple<T1, T2> && tuple)
+		{ first = rvalue(tuple.first); second = rvalue(tuple.second); }
+	template<typename T1, typename T2> Tuple & operator = (const Tuple<T1, T2> & tuple)
+		{ first = tuple.first; second = tuple.second; }
+};
+
+// ------------------------------------------------------------ //
+//		Array Implementation
+// ------------------------------------------------------------ //
+
 // Array allocator - creates a new array
 template<typename T> Array<T> * Array<T>::create(size_t n)
 {
 	// Allocate array with custom size
-	auto * array = nx::type::alloc<Array<T>>(sizeof(Array<T>) + n * sizeof(T));
+	auto * array = nx::type::alloc<Array>(sizeof(Array) + n * sizeof(T));
 	// Return null, if the allocation failed
 	if (!array) return nullptr;
 	// Create array (needs to be done in this function, because constructor is private)
-	new (static_cast<void *>(array)) Array<T>(n);
+	new (static_cast<void *>(array)) Array(n);
 	// Create elements
 	nx::type::createArrayAt<T>(array->data, n);
 	// Return array
@@ -242,11 +297,11 @@ template<typename T> template<typename... TS> Array<T> * Array<T>::createFrom(TS
 {
 	constexpr size_t n = sizeof...(list);
 	// Allocate array with custom size
-	auto * array = nx::type::alloc<Array<T>>(sizeof(Array<T>) + n * sizeof(T));
+	auto * array = nx::type::alloc<Array>(sizeof(Array) + n * sizeof(T));
 	// Return null, if the allocation failed
 	if (!array) return nullptr;
 	// Create array (needs to be done in this function, because constructor is private)
-	new (static_cast<void *>(array)) Array<T>(n);
+	new (static_cast<void *>(array)) Array(n);
 	// Create elements
 	nx::type::createArrayAtFromList<T>(array->data, list...);
 	// Return array
@@ -263,7 +318,6 @@ template<typename T> void Array<T>::fill(Array<T> & array, size_t off, size_t le
 	for (size_t i = 0; i < len; ++ i)
 		array[off + i] = item;
 }
-
 
 // Copy arrays
 template<typename T> void Array<T>::copy(const Array<T> & src, Array<T> & dest, size_t len)

@@ -17,9 +17,9 @@ public:
 	// Constructors & destructors
 	List() noexcept
 		: n(0), m(0), items(nullptr) {}
-	List(List<T> && list) noexcept
+	List(List && list) noexcept
 		: n(list.n), m(list.m), items(list.items) {list.n = 0; list.m = 0; list.items = nullptr;}
-	List(const List<T> & list);
+	List(const List & list);
 	~List() override
 		{nx::type::destroyArrayAt(items, n); nx::type::free(items);}
 		
@@ -47,8 +47,8 @@ public:
 	void append(T && item);
 	void append(const T & item);
 	
-	void extend(List<T> && list);
-	void extend(const List<T> & list);
+	void extend(List && list);
+	void extend(const List & list);
 	
 	// Itertator methods
 	inline T * begin() noexcept
@@ -61,8 +61,8 @@ public:
 		{return items + n;}
 	
 	// Copy & move
-	List<T> & operator = (List<T> && list) noexcept;
-	List<T> & operator = (const List<T> & list);
+	List & operator = (List && list) noexcept;
+	List & operator = (const List & list);
 	
 	// Operators
 	inline T & operator [] (size_t i) noexcept
@@ -70,9 +70,9 @@ public:
 	inline const T & operator [] (size_t i) const noexcept
 		{return items[i];}
 		
-	inline List<T> & operator += (List<T> && list)
-		{extend(static_cast<List<T> &&>(list)); return * this;}
-	inline List<T> & operator += (const List<T> & list)
+	inline List & operator += (List && list)
+		{extend(static_cast<List &&>(list)); return * this;}
+	inline List & operator += (const List & list)
 		{extend(list); return * this;}
 		
 private:
@@ -93,7 +93,11 @@ private:
 template<typename K, typename V> class Dictionary: public Object
 {
 public:
+
+
 private:
+	Object * indexArray;
+	
 };
 
 // ------------------------------------------------------------ //
@@ -251,7 +255,7 @@ template<typename T> List<T> & List<T>::operator = (const List<T> & list)
 // ------------------------------------------------------------ //
 
 // ------------------------------------------------------------ //
-//		Map Implementation
+//		Dictionary Implementation
 // ------------------------------------------------------------ //
 
 // Close namespace "nx"

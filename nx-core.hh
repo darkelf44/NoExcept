@@ -59,7 +59,7 @@ template<typename T> constexpr T * null() noexcept
 // [FUNCTION] param - Intended for use in typeof/sizeof/noexcept expressions, creates a expression with the given type. When called returns a null value or null reference.
 template<typename T> constexpr T && param() noexcept
 	{ return reinterpret_cast<T &&>(* static_cast<char *>(nullptr)); }
-
+	
 // Close namespace "nx"
 }
 
