@@ -156,7 +156,7 @@ template<typename T, size_t N> struct Multi
 	// Fields
 	T data[N];
 	
-	// Operators & methods
+	// Iterators - mostly for foreach
 	inline T * begin()
 		{return data;}
 	inline const T * begin() const
@@ -165,10 +165,12 @@ template<typename T, size_t N> struct Multi
 		{return data + N;}
 	inline const  T * end() const
 		{return data + N;}
+		
+	// Operators & methods
 	inline T & operator [] (size_t i)
 		{return data[i];}
 	inline const T & operator [] (size_t i) const
-		{return data[i];}		
+		{return data[i];}
 };
 
 // Array class - Java like array type (dynamically allocated on the heap, cannot be resized)
@@ -186,7 +188,7 @@ public:
 	~Array() override
 		{nx::type::destroyArrayAt<T>(data, length);}
 		
-	// Operators & methods
+	// Iterators - mostly for foreach
 	inline T * begin()
 		{return data;}
 	inline const T * begin() const
@@ -195,18 +197,24 @@ public:
 		{return data + length;}
 	inline const  T * end() const
 		{return data + length;}
+	
+	// Operators & methods
 	inline T & operator [] (size_t i)
 		{return data[i];}
 	inline const T & operator [] (size_t i) const
 		{return data[i];}
-		
+	
 	// Allocators
 	static Array<T> * create(size_t n);	
 	template<typename... TS> static Array<T> * createFrom(TS && ... list);
 	
-	// Class methods
-	static void copy(const Array<T> & src, Array<T> & dest, size_t n);
-	static void copy(const Array<T> & src, size_t i, Array<T> & dest, size_t j, size_t n);
+	// Fill arrays
+	static void fill(Array<T> & array, const T & item);
+	static void fill(Array<T> & array, size_t off, size_t len, const T & item);
+	
+	// Copy arrays
+	static void copy(const Array<T> & src, Array<T> & dest, size_t len);
+	static void copy(const Array<T> & src, size_t src_idx, Array<T> & dest, size_t dest_idx, size_t len);
 	
 private:
 	// Constructors
@@ -245,12 +253,36 @@ template<typename T> template<typename... TS> Array<T> * Array<T>::createFrom(TS
 	return array;
 }
 
-// Copy arrays
-template<typename T> void Array<T>::copy(const Array<T> & src, Array<T> & dest, size_t n)
-	{copy(src, 0, dest, 0, n);}
-template<typename T> void Array<T>::copy(const Array<T> & src, size_t i, Array<T> & dest, size_t j, size_t n)
+// Fill arrays
+template<typename T> void Array<T>::fill(Array<T> & array, const T & item)
 {
-	// TODO: Implement this
+	fill(array, 0, array.length, item);
+}
+template<typename T> void Array<T>::fill(Array<T> & array, size_t off, size_t len, const T & item)
+{
+	for (size_t i = 0; i < len; ++ i)
+		array[off + i] = item;
+}
+
+
+// Copy arrays
+template<typename T> void Array<T>::copy(const Array<T> & src, Array<T> & dest, size_t len)
+{
+	copy(src, 0, dest, 0, len);
+}
+template<typename T> void Array<T>::copy(const Array<T> & src, size_t src_idx, Array<T> & dest, size_t dest_idx, size_t len)
+{
+	// copy supports copying inside the same array, and tries to copy forward
+	if (& src != & dest || src_idx >= dest_idx || src_idx + len <= dest_idx)
+	{
+		for (size_t i = 0; i < len; ++ i)
+			dest[src_idx + i] = dest[dest_idx + i];
+	}
+	else
+	{
+		for (size_t i = len - 1; i < len; -- i)
+			dest[src_idx + i] = dest[dest_idx + i];
+	}
 }
 
 // Close namespace "nx"
