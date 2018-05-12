@@ -3,11 +3,21 @@
 
 // Local includes
 #include "nx-type.hh"
+//#include "nx-meta.hh"
 
 // Namespace "nx"
 namespace nx {
+
+/**
+	[CLASS] List - Dynamically resizable arrays
 	
-// List class - Dynamically resizable arrays -- TODO: concurrent, lock free, virtual interface
+	Implementation:
+	
+	List is currently implemented with 3 fields, for storing the size, capacity, and a pointer to the array. An other
+	possible way to implement it would be to store the size and the capacity in the allocate memory. This would mean an
+	extra indirection when looking up those fields, but it would decrese the size of the structure to just a single
+	pointer field.
+ */
 template<typename T> class List: public Object
 {
 public:
@@ -90,14 +100,51 @@ private:
 
 
 // Dictionary class - Associative array, map, or dictionary -- TODO: concurrect, lock free, virtual interface
+/**
+	[CLASS] Dictionary - Associative array (also sometimes called "map")
+	
+	Implementation:
+	
+	Dictionary is implemented using two lists. The first contains nodes, these nodes combine the key, the hash of the
+	key, and the associated value. The second is the index table, this is a hash table, that contains indices into the
+	node list.
+	
+	The index table can contain 8, 16, 32 or 64 bit indices, depending on its size. If it's current size is less than
+	128, 32768 or 2^31 bytes, it will use 8, 16 or 32 bit indices respectively, otherwise it' use 64bit indices
+	(but by then just the index table will take up 8 GB of memory).
+ */
 template<typename K, typename V> class Dictionary: public Object
 {
 public:
+	// Entry type
+	using Entry = Pair<K, V>;
 
+	// Constructors & destructors
+	Dictionary()
+		: nodes(nullptr), table(nullptr) {}
 
 private:
-	Object * indexArray;
+	// Node type
+	struct Node;
 	
+	// Configuration
+	struct
+	{
+		float growth_rate = 2.0;
+		float shrink_rate = 0.5;
+		float max_fill_rate = 0.75;
+		float min_fill_rate = 0.25;
+	}
+	config;
+	
+	// Node list and index
+	List<Node> nodes;
+	List<byte> table;
+};
+
+// Tuple class - The real, generic version of the tuple
+template<typename ... TS> struct Tuple
+{
 };
 
 // ------------------------------------------------------------ //
@@ -257,6 +304,28 @@ template<typename T> List<T> & List<T>::operator = (const List<T> & list)
 // ------------------------------------------------------------ //
 //		Dictionary Implementation
 // ------------------------------------------------------------ //
+
+template<typename K, typename V> struct Dictionary<K, V>::Node
+{
+	// Fields
+	uintptr_t hash;
+	union
+	{
+		Entry entry;
+	};
+	
+	// Constructors & destructors
+	Node()
+		: hash(0) {}
+	~Node()
+		{if (hash != 0) destroy();}
+	
+	// Create and destroy the entry
+	template<typename ... TS> void create(TS && ... args) noexcept(nx::type::isCreateNoexcept<Entry, TS ...>())
+		{nx::type::createAt(& entry, forward<TS &&>(args) ...);}
+	void destroy() noexcept(nx::type::isDestroyNoexcept<Entry>())
+		{nx::type::destroyAt(& entry);}
+};
 
 // Close namespace "nx"
 }
