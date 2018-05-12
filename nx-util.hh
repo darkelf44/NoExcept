@@ -81,6 +81,25 @@ private:
 	T *    items;
 };
 
+// Set class - TODO: concurrent, lock free, virtual interface
+template<typename T> class Set: public Object
+{
+public:
+private:
+};
+
+
+// Dictionary class - Associative array, map, or dictionary -- TODO: concurrect, lock free, virtual interface
+template<typename K, typename V> class Dictionary: public Object
+{
+public:
+private:
+};
+
+// ------------------------------------------------------------ //
+//		List Implementation
+// ------------------------------------------------------------ //
+
 template<typename T> List<T>::List(const List<T> & list)
 	: nx::Object(), n(0), m(0), items(nullptr)
 {
@@ -227,16 +246,13 @@ template<typename T> List<T> & List<T>::operator = (const List<T> & list)
 	return * this;
 }
 
-// Set class - TODO: concurrent, lock free, virtual interface
-template<typename T> class Set: public Object
-{
-};
+// ------------------------------------------------------------ //
+//		Set Implementation
+// ------------------------------------------------------------ //
 
-
-// Dictionary class - Associative array, map, or dictionary -- TODO: concurrect, lock free, virtual interface
-template<typename K, typename V> class Dictionary: public Object
-{
-};
+// ------------------------------------------------------------ //
+//		Map Implementation
+// ------------------------------------------------------------ //
 
 // Close namespace "nx"
 }
