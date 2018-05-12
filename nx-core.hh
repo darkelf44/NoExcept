@@ -52,8 +52,9 @@ Object::~Object() = default;
 template<typename... TS> inline void skip(TS && ... args) noexcept
 	{ /* Do nothing */ }
 	
-// [FUNCTION] param - Intended for use in typeof/sizeof/noexcept expressions, creates a expression with the given type.
-template<typename T> T param() noexcept;
+// [FUNCTION] param - Intended for use in typeof/sizeof/noexcept expressions, creates a expression with the given type. When called returns a null value or null reference.
+template<typename T> inline T && param() noexcept
+	{return reinterpret_cast<T &&>(* static_cast<char *>(nullptr));}
 
 // Close namespace "nx"
 }

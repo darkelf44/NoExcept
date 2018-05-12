@@ -15,8 +15,11 @@ public:
 	using Type = T;
 
 	// Constructors & destructors
-	List()
+	List() noexcept
 		: n(0), m(0), data(nullptr) {}
+	List(List<T> && list) noexcept
+		: n(list.n), m(list.m), data(list.data) {list.n = 0; list.m = 0; list.data = nullptr;}
+	List(const List<T> && list);
 	~List() override
 		{nx::type::destroyArrayAt(data, n); nx::type::free(data);}
 		
@@ -42,19 +45,19 @@ public:
 	void extend(const List<T> & list);
 	
 	// Itertator methods
-	inline T * begin()
+	inline T * begin() noexcept
 		{return data;}
-	inline const T * begin() const
+	inline const T * begin() const noexcept
 		{return data;}
-	inline T * end()
+	inline T * end() noexcept
 		{return data + n;}
-	inline const T * end() const
+	inline const T * end() const noexcept
 		{return data + n;}
 		
 	// Operators
-	inline T & operator [] (size_t i)
+	inline T & operator [] (size_t i) noexcept
 		{return data[i];}
-	inline const T & operator [] (size_t i) const
+	inline const T & operator [] (size_t i) const noexcept
 		{return data[i];}
 		
 	inline List<T> & operator += (List<T> && list)
@@ -111,7 +114,7 @@ template<typename T> void List<T>::compact()
 	{
 		List list;
 		list.data = nx::type::alloc<T>(sizeof(T) * n);
-		nx::type::confirm(list.get());
+		nx::type::confirm(list.data);
 		
 		nx::type::createArrayAtByMove(list.data, data, n);
 		nx::type::destroyArrayAt(data, n);
@@ -132,7 +135,8 @@ template<typename T> void List<T>::append(T && item)
 		reserve(m + (m >> 1));
 	}
 	
-	data[n ++] = static_cast<T &&>(item);
+	nx::type::createAt(data + n, static_cast<T &&>(item));
+	n ++;
 }
 
 template<typename T> void List<T>::append(const T & item)
@@ -140,26 +144,46 @@ template<typename T> void List<T>::append(const T & item)
 	if (n + 1 > m)
 	{
 		// Exponential growth with a 1.5 base (starting from 16)
-		m = m > 16 ? m : 16; 
+		m = m > 16 ? m : 16;
 		reserve(m + (m >> 1));
 	}
 	
-	data[n ++] = item;
+	nx::type::createAt(data + n, item);
+	n ++;
 }
 
 template<typename T> void List<T>::extend(List<T> && list)
 {
-	if (n + list.n > m)
-	{
-	}
+	if (list.n == 0)
+		return;
 	
-	if (nx::type::isCreateNoexcept<T>())
+	size_t x = m > 16 ? m : 16;
+	while (n + list.n > x)
 	{
+		x = x + (x >> 1);
 	}
-	else
-	{
-	}
+	reserve(x);
+
+	nx::type::createArrayAtByMove(data + n, list.data, list.n);
+	n += list.n;
 }
+
+template<typename T> void List<T>::extend(const List<T> & list)
+{
+	if (list.n == 0)
+		return;
+	
+	size_t x = m > 16 ? m : 16;
+	while (n + list.n > x)
+	{
+		x = x + (x >> 1);
+	}
+	reserve(x);
+
+	nx::type::createArrayAtByCopy(data + n, list.data, list.n);
+	n += list.n;
+}
+
 
 
 // Set class - TODO: concurrent, lock free, virtual interface
