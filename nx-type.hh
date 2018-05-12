@@ -10,11 +10,37 @@
 
 // Namespace "nx"
 namespace nx {
+	
+// Namespace "nx::meta" - Meta programming resources
+namespace meta {
+	
+// Namespace "nx::meta::proto" - Naked C++ meta functions, without wrappers
+namespace proto {
+	
+// [META FUNCTION] If - Conditional expression
+template<bool b, typename T, typename F> struct If;
+template<typename T, typename F> struct If<true, T, F> { using Result = T; };
+template<typename T, typename F> struct If<false, T, F> { using Result = F; };
+
+// [META FUNCTION] Select - Select from a parameter list
+template<size_t i, typename ... TS> struct Select;
+template<typename T, typename ... TS> struct Select<0, T, TS ...> { using Result = T; };
+template<size_t i, typename T, typename ... TS> struct Select<i, T, TS ...> { using Result = typename Select<i - 1, TS ...>::Result; };
+
+// close namespace "nx::meta::proto"
+}
+
+template<bool b, typename T, typename F> using If = typename proto::If<b, T, F>::Result;
+template<size_t i, typename ... TS> using Select = typename proto::Select<i, TS ...>::Result;
+
+
+// close namespace "nx::meta"
+}
 
 // Namespace "nx::type" - Type system related functionality
 namespace type {
 
-// Namespace "nx::type::proto" - Naked C++ meta function, without wrappers
+// Namespace "nx::type::proto" - Naked C++ meta functions, without wrappers
 namespace proto {
 
 // [META FUNCTION] Id - Identity function, returns the given type. Useful for preventing type deduction
@@ -101,36 +127,36 @@ template<typename T> struct Strip { using Result = typename RemoveQualifiers<typ
 template<typename T> inline uintptr_t typeid()
 	{ static void * id; return reinterpret_cast<uintptr_t>(&id); }
 
-template<typename T> using Id = typename nx::type::proto::Id<T>::Result;
-template<bool b, typename T> using EnableIf = typename nx::type::proto::EnableIf<b, T>::Result;
+template<typename T> using Id = typename proto::Id<T>::Result;
+template<bool b, typename T> using EnableIf = typename proto::EnableIf<b, T>::Result;
 
 template<typename T> inline constexpr bool isConstant()
-	{ return nx::type::proto::IsConstant<T>::result; }
+	{ return proto::IsConstant<T>::result; }
 template<typename T> inline constexpr bool isVolatile()
-	{ return nx::type::proto::IsVolatile<T>::result; }
+	{ return proto::IsVolatile<T>::result; }
 template<typename T> inline constexpr bool isQualified()
-	{ return nx::type::proto::IsConstant<T>::result || nx::type::proto::IsVolatile<T>::result; }
+	{ return proto::IsConstant<T>::result || proto::IsVolatile<T>::result; }
 	
 template<typename T> inline constexpr bool isPointer()
-	{ return nx::type::proto::IsPointer<T>::result; }
+	{ return proto::IsPointer<T>::result; }
 template<typename T> inline constexpr bool isReference()
-	{ return nx::type::proto::IsReference<T>::result; }
+	{ return proto::IsReference<T>::result; }
 template<typename T> inline constexpr bool isLValueReference()
-	{ return nx::type::proto::IsReference<T>::result; }
+	{ return proto::IsReference<T>::result; }
 template<typename T> inline constexpr bool isRValueReference()
-	{ return nx::type::proto::IsRValueReference<T>::result; }
+	{ return proto::IsRValueReference<T>::result; }
 template<typename T> inline constexpr bool isAnyReference()
-	{ return nx::type::proto::IsReference<T>::result || nx::type::proto::IsRValueReference<T>::result; }
+	{ return proto::IsReference<T>::result || proto::IsRValueReference<T>::result; }
 
-template<typename T> using RemoveConstant = typename nx::type::proto::RemoveConstant<T>::Result;
-template<typename T> using RemoveVolatile = typename nx::type::proto::RemoveVolatile<T>::Result;
-template<typename T> using RemoveQualifiers = typename nx::type::proto::RemoveQualifiers<T>::Result;
+template<typename T> using RemoveConstant = typename proto::RemoveConstant<T>::Result;
+template<typename T> using RemoveVolatile = typename proto::RemoveVolatile<T>::Result;
+template<typename T> using RemoveQualifiers = typename proto::RemoveQualifiers<T>::Result;
 
-template<typename T> using RemovePointer = typename nx::type::proto::RemovePointer<T>::Result;
-template<typename T> using RemoveReference = typename nx::type::proto::RemoveReference<T>::Result;
-template<typename T> using RemoveLValueReference = typename nx::type::proto::RemoveReference<T>::Result;
-template<typename T> using RemoveRValueReference = typename nx::type::proto::RemoveRValueReference<T>::Result;
-template<typename T> using RemoveAnyReference = typename nx::type::proto::RemoveAnyReference<T>::Result;
+template<typename T> using RemovePointer = typename proto::RemovePointer<T>::Result;
+template<typename T> using RemoveReference = typename proto::RemoveReference<T>::Result;
+template<typename T> using RemoveLValueReference = typename proto::RemoveReference<T>::Result;
+template<typename T> using RemoveRValueReference = typename proto::RemoveRValueReference<T>::Result;
+template<typename T> using RemoveAnyReference = typename proto::RemoveAnyReference<T>::Result;
 
 template<typename T> using Strip = typename RemoveQualifiers<typename RemoveAnyReference<T>::Result>::Result;
 
@@ -241,7 +267,7 @@ template<typename X, typename Y> using Pair = Tuple<X, Y>;
 template<typename X, typename Y, typename Z> using Trio = Tuple<X, Y, Z>;
 template<typename X, typename Y, typename Z, typename W> using Quad = Tuple<X, Y, Z, W>;
 
-// Pair class - Generic, two element structure
+// Pair class - Generic two element structure
 template<typename X, typename Y> struct Tuple<X, Y>
 {
 	// Fields
@@ -261,16 +287,89 @@ template<typename X, typename Y> struct Tuple<X, Y>
 	template<typename T1, typename T2> Tuple(T1 && t1, T2 && t2)
 		: first(forward<T1 &&>(t1)), second(forward<T2 &&>(t2)) {}
 		
-	// Methods TODO: somehow implement the "at" method	
+	// Methods: TODO: somehow implement this
+	template<size_t I> meta::Select<I, X, Y> & at();
+	template<size_t I> const meta::Select<I, X, Y> & at() const;
 	
 	// Copy and move
-	Tuple<X, Y> & operator = (Tuple &&) = default;
-	Tuple<X, Y> & operator = (const Tuple &) = default;
+	Tuple & operator = (Tuple &&) = default;
+	Tuple & operator = (const Tuple &) = default;
 	
 	template<typename T1, typename T2> Tuple & operator = (Tuple<T1, T2> && tuple)
-		{ first = rvalue(tuple.first); second = rvalue(tuple.second); }
+		{first = rvalue(tuple.first); second = rvalue(tuple.second); return * this;}
 	template<typename T1, typename T2> Tuple & operator = (const Tuple<T1, T2> & tuple)
-		{ first = tuple.first; second = tuple.second; }
+		{first = tuple.first; second = tuple.second; return * this;}
+};
+
+// Trio class - Generic three element structure
+template<typename X, typename Y, typename Z> struct Tuple<X, Y, Z>
+{
+	// Fields
+	X first;
+	Y second;
+	Z third;
+	
+	// Constructors
+	Tuple() = default;
+	Tuple(Tuple &&) = default;
+	Tuple(const Tuple &) = default;
+	
+	template<typename T1, typename T2, typename T3> Tuple(Tuple<T1, T2, T3> && tuple)
+		: first(rvalue(tuple.first)), second(rvalue(tuple.second)), third(rvalue(tuple.third)) {}
+	template<typename T1, typename T2, typename T3> Tuple(const Tuple<T1, T2, T3> & tuple)
+		: first(tuple.first), second(tuple.second), third(tuple.third) {}
+	
+	template<typename T1, typename T2, typename T3> Tuple(T1 && t1, T2 && t2, T3 && t3)
+		: first(forward<T1 &&>(t1)), second(forward<T2 &&>(t2)), third(forward<T3 &&>(t3)) {}
+		
+	// Methods: TODO: somehow implement this
+	template<size_t I> meta::Select<I, X, Y, Z> & at();
+	template<size_t I> const meta::Select<I, X, Y, Z> & at() const;
+	
+	// Copy and move
+	Tuple & operator = (Tuple &&) = default;
+	Tuple & operator = (const Tuple &) = default;
+	
+	template<typename T1, typename T2, typename T3> Tuple & operator = (Tuple<T1, T2, T3> && tuple)
+		{first = rvalue(tuple.first); second = rvalue(tuple.second); third = rvalue(tuple.third); return * this;}
+	template<typename T1, typename T2, typename T3> Tuple & operator = (const Tuple<T1, T2, T3> & tuple)
+		{first = tuple.first; second = tuple.second; third = tuple.third; return * this;}
+};
+
+// Quad class - Generic four element structure
+template<typename X, typename Y, typename Z, typename W> struct Tuple<X, Y, Z, W>
+{
+	// Fields
+	X first;
+	Y second;
+	Z third;
+	W fourth;
+	
+	// Constructors
+	Tuple() = default;
+	Tuple(Tuple &&) = default;
+	Tuple(const Tuple &) = default;
+	
+	template<typename T1, typename T2, typename T3, typename T4> Tuple(Tuple<T1, T2, T3, T4> && tuple)
+		: first(rvalue(tuple.first)), second(rvalue(tuple.second)), third(rvalue(tuple.third)) {}
+	template<typename T1, typename T2, typename T3, typename T4> Tuple(const Tuple<T1, T2, T3, T4> & tuple)
+		: first(tuple.first), second(tuple.second), third(tuple.third) {}
+	
+	template<typename T1, typename T2, typename T3, typename T4> Tuple(T1 && t1, T2 && t2, T3 && t3)
+		: first(forward<T1 &&>(t1)), second(forward<T2 &&>(t2)), third(forward<T3 &&>(t3)) {}
+		
+	// Methods: TODO: somehow implement this
+	template<size_t I> meta::Select<I, X, Y, Z, W> & at();
+	template<size_t I> const meta::Select<I, X, Y, Z, W> & at() const;
+	
+	// Copy and move
+	Tuple & operator = (Tuple &&) = default;
+	Tuple & operator = (const Tuple &) = default;
+	
+	template<typename T1, typename T2, typename T3, typename T4> Tuple & operator = (Tuple<T1, T2, T3, T4> && tuple)
+		{first = rvalue(tuple.first); second = rvalue(tuple.second); third = rvalue(tuple.third); fourth = rvalue(tuple.fourth); return * this;}
+	template<typename T1, typename T2, typename T3, typename T4> Tuple & operator = (const Tuple<T1, T2, T3, T4> & tuple)
+		{first = tuple.first; second = tuple.second; third = tuple.third; fourth = tuple.fourth; return * this;}
 };
 
 // ------------------------------------------------------------ //
