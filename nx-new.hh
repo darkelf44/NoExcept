@@ -51,7 +51,7 @@ template<typename T> inline T * free(T * obj) noexcept
 	operator delete (static_cast<void *>(obj)); return nullptr;
 }
 
-// Confirm that all memory was allocated. TODO: Throws <?> exception if any of the pointers are null
+// Confirm that allocations were successful. TODO: Throws <?> exception if any of the pointers are null
 template<typename... TS> inline void confirm(const TS * ... ptrs)
 {
 	// Extract parameter pack (I prefer this to recursion)
@@ -60,7 +60,16 @@ template<typename... TS> inline void confirm(const TS * ... ptrs)
 	for (bool value : list)
 	{
 		if (!value)
-			std::terminate();
+		{
+			if (exceptions)
+			{
+				//__nx_throw();
+			}
+			else
+			{
+				std::terminate();
+			}
+		}
 	}
 }
 

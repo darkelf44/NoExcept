@@ -253,9 +253,14 @@ void Testing::finish(Ring r)
 	{
 		RingData & next = rings[r + 1];
 		if (ring.failed)
+		{
 			next.failure += 1;
+			next.failed = true;
+		}
 		else
+		{
 			next.success += 1;
+		}
 	}
 	
 	switch (r)

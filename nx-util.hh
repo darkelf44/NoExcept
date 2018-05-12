@@ -19,7 +19,7 @@ public:
 		: n(0), m(0), data(nullptr) {}
 	List(List<T> && list) noexcept
 		: n(list.n), m(list.m), data(list.data) {list.n = 0; list.m = 0; list.data = nullptr;}
-	List(const List<T> && list);
+	List(const List<T> & list);
 	~List() override
 		{nx::type::destroyArrayAt(data, n); nx::type::free(data);}
 		
@@ -71,6 +71,16 @@ private:
 	T * data;
 };
 
+template<typename T> List<T>::List(const List<T> & list)
+	: nx::Object(), n(0), m(0), data(nullptr)
+{
+	if (list.n > 0)
+	{
+		reserve(list.n);
+		nx::type::createArrayAtByCopy(data, list.data, list.n);
+		n = list.n;
+	}
+}
 
 template<typename T> void List<T>::resize(size_t size)
 {
@@ -154,34 +164,34 @@ template<typename T> void List<T>::append(const T & item)
 
 template<typename T> void List<T>::extend(List<T> && list)
 {
-	if (list.n == 0)
-		return;
-	
-	size_t x = m > 16 ? m : 16;
-	while (n + list.n > x)
+	if (list.n > 0)
 	{
-		x = x + (x >> 1);
-	}
-	reserve(x);
+		size_t x = m > 16 ? m : 16;
+		while (n + list.n > x)
+		{
+			x = x + (x >> 1);
+		}
+		reserve(x);
 
-	nx::type::createArrayAtByMove(data + n, list.data, list.n);
-	n += list.n;
+		nx::type::createArrayAtByMove(data + n, list.data, list.n);
+		n += list.n;
+	}
 }
 
 template<typename T> void List<T>::extend(const List<T> & list)
 {
-	if (list.n == 0)
-		return;
-	
-	size_t x = m > 16 ? m : 16;
-	while (n + list.n > x)
+	if (list.n > 0)
 	{
-		x = x + (x >> 1);
-	}
-	reserve(x);
+		size_t x = m > 16 ? m : 16;
+		while (n + list.n > x)
+		{
+			x = x + (x >> 1);
+		}
+		reserve(x);
 
-	nx::type::createArrayAtByCopy(data + n, list.data, list.n);
-	n += list.n;
+		nx::type::createArrayAtByCopy(data + n, list.data, list.n);
+		n += list.n;
+	}
 }
 
 

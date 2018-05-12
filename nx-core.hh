@@ -49,12 +49,16 @@ Object::Object() = default;
 Object::~Object() = default;
 
 // [FUNCTION] skip - A very useful function. It takes any number of arguments, and does absolutely nothing
-template<typename... TS> inline void skip(TS && ... args) noexcept
+template<typename... TS> constexpr void skip(TS && ... args) noexcept
 	{ /* Do nothing */ }
 	
+// [FUNCTION] null - Typed null pointer. Shorthand for static_cast-ing nullptr
+template<typename T> constexpr T * null() noexcept
+	{ return nullptr; }
+	
 // [FUNCTION] param - Intended for use in typeof/sizeof/noexcept expressions, creates a expression with the given type. When called returns a null value or null reference.
-template<typename T> inline T && param() noexcept
-	{return reinterpret_cast<T &&>(* static_cast<char *>(nullptr));}
+template<typename T> constexpr T && param() noexcept
+	{ return reinterpret_cast<T &&>(* static_cast<char *>(nullptr)); }
 
 // Close namespace "nx"
 }

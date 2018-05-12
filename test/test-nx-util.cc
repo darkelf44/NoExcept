@@ -15,18 +15,41 @@ template<typename T> void TestList(nx::Testing & test)
 		}
 	);
 	
-	test.runCase( "Append" , [] (bool)	// List append test - Make sure, that we can add elements to the list
+	test.runCase( "Append & Extend" , [] (bool)	// List append test - Make sure, that we can add elements to the list
 		{
-			nx::List<T> list;
+			T t;
 			
-			list.append(T());
-			expectEqual(1, list.size());
-			list.append(T());
-			expectEqual(2, list.size());
-			list.append(T());
-			expectEqual(3, list.size());
-			list.append(T());
-			expectEqual(4, list.size());
+			// Append T &&
+			nx::List<T> list1;			
+			for (size_t i = 1; i <= 16; ++ i)
+			{
+				list1.append(T());
+				expectEqual(i, list1.size());
+			}
+			
+			// Append const T &
+			nx::List<T> list2;			
+			for (size_t i = 1; i <= 16; ++ i)
+			{
+				list2.append(t);
+				expectEqual(i, list2.size());
+			}
+			
+			// Extend T &&
+			nx::List<T> list3;
+			for (size_t i = 1; i <= 16; ++ i)
+			{
+				list3.extend(nx::List<T>(list1));
+				expectEqual(i * list1.size(), list3.size());
+			}
+			
+			// Extend const T &
+			nx::List<T> list4;
+			for (size_t i = 1; i <= 16; ++ i)
+			{
+				list4.extend(list1);
+				expectEqual(i * list1.size(), list4.size());
+			}
 		}
 	);
 	
