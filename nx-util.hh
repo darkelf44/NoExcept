@@ -8,15 +8,38 @@
 // Namespace "nx"
 namespace nx {
 
+// [CLASS] In - Optional input only parameter. Can be constructed from "nothing". 
+template<typename T> class In
+{
+};
+
+// [CLASS] In - Optional output only parameter. Can be constructed from "nothing". 
+template<typename T> class Out
+{
+};
+
+// [CLASS] In - Optional input output parameter. Can be constructed from "nothing". 
+template<typename T> class InOut
+{
+};
+
 /**
 	[CLASS] List - Dynamically resizable arrays
 	
 	Implementation:
 	
-	List is currently implemented with 3 fields, for storing the size, capacity, and a pointer to the array. An other
-	possible way to implement it would be to store the size and the capacity in the allocate memory. This would mean an
-	extra indirection when looking up those fields, but it would decrese the size of the structure to just a single
-	pointer field.
+	List is currently implemented with 3 fields, for storing the size, capacity, and a pointer to the array.
+	
+	An other option would be to store the size and the capacity in the allocated space, like in array. This, just like
+	in array, would reduce the size of the structure to a single pointer.
+	
+	But there is a very nice property of the current implementation, that we desperately want to keep: Creating an
+	empty list does not need allocate any additional memory. This means creating empty lists are VERY fast, and VERY
+	cheap to do so.
+	
+	To achive the same with the single pointer implementation, it would need additional branching to determine the
+	size and capacity of the list, and also introduces some extra indirection. It's a small tradeoff, but a tradeoff
+	nevertheless.
  */
 template<typename T> class List: public Object
 {
@@ -91,6 +114,10 @@ private:
 	T *    items;
 };
 
+// Operations on List
+template<typename T> void swap(List<T> & left, List<T> & right) noexcept;
+
+
 // Set class - TODO: concurrent, lock free, virtual interface
 template<typename T> class Set: public Object
 {
@@ -122,6 +149,10 @@ public:
 	// Constructors & destructors
 	Dictionary()
 		: nodes(nullptr), table(nullptr) {}
+	Dictionary(Dictionary && dict)
+		: config(dict.config), nodes(rvalue(dict.nodes)), table(rvalue(dict.table)) {}
+	Dictionary(const Dictionary & dict)
+		: config(dict.config), nodes(dict.nodes), table(dict.table) {}
 
 private:
 	// Node type
@@ -142,10 +173,22 @@ private:
 	List<byte> table;
 };
 
-// Tuple class - The real, generic version of the tuple
+// Tuple class - The real, generic version of the tuple COMING SOON!
 template<typename ... TS> struct Tuple
 {
 };
+
+// ------------------------------------------------------------ //
+//		Utility functions
+// ------------------------------------------------------------ //
+
+template<typename T> void swap(T & left, T & right) noexcept(nx::type::isCreateNoexcept<T, T>() && nx::type::isMoveNoexcept<T>())
+{
+	T l = rvalue(left);
+	T r = rvalue(right);
+	left = rvalue(r);
+	right = rvalue(l);
+}
 
 // ------------------------------------------------------------ //
 //		List Implementation
@@ -284,18 +327,23 @@ template<typename T> void List<T>::extend(const List<T> & list)
 
 template<typename T> List<T> & List<T>::operator = (List<T> && list) noexcept
 {
-	n = list.n; list.n = 0;
-	m = list.m; list.m = 0;
-	items = list.items; list.items = nullptr;
+	swap(* this, list);
 	return * this;
 }
 
 template<typename T> List<T> & List<T>::operator = (const List<T> & list)
 {
-	resize(0);
-	extend(list);
+	// TODO: use operator = here
 	return * this;
 }
+
+template<typename T> void swap(List<T> & left, List<T> & right) noexcept
+{
+	swap(left.n, right.n);
+	swap(left.m, right.m);
+	swap(left.items, right.items);
+}
+
 
 // ------------------------------------------------------------ //
 //		Set Implementation
@@ -305,6 +353,14 @@ template<typename T> List<T> & List<T>::operator = (const List<T> & list)
 //		Dictionary Implementation
 // ------------------------------------------------------------ //
 
+/**
+	[CLASS] Dictionary Node - Stores dictionary entries with their hashes
+	
+	Implementation:
+	
+	The hash value 0 is remapped, and used to indicate empty nodes. Empty nodes are nodes, without a constructed entry
+	inside them. These nodes are managed by the 
+ */
 template<typename K, typename V> struct Dictionary<K, V>::Node
 {
 	// Fields
@@ -315,8 +371,14 @@ template<typename K, typename V> struct Dictionary<K, V>::Node
 	};
 	
 	// Constructors & destructors
-	Node()
+	Node() noexcept
 		: hash(0) {}
+	/*
+	Node(Node && node) noexcept(nx::type::isCreateNoexcept<Entry, Entry>())
+		: hash(node.hash) {if (hash) create(rvalue(node.entry));}
+	Node(const Node & node) noexcept(nx::type::isCreateNoexcept<Entry, Entry &>())
+		: hash(node.hash) {if (hash) create(node.entry);}
+		*/
 	~Node()
 		{if (hash != 0) destroy();}
 	
@@ -325,6 +387,10 @@ template<typename K, typename V> struct Dictionary<K, V>::Node
 		{nx::type::createAt(& entry, forward<TS &&>(args) ...);}
 	void destroy() noexcept(nx::type::isDestroyNoexcept<Entry>())
 		{nx::type::destroyAt(& entry);}
+		
+	// Copy and move isn't needed
+	Node & operator = (Node && node) = delete;
+	Node & operator = (const Node & node) = delete;
 };
 
 // Close namespace "nx"

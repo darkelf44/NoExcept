@@ -33,6 +33,9 @@ namespace nx {
 using byte = unsigned char;
 using uint = unsigned int;
 
+// Nothing - Type of the nihil
+enum class Nothing { nothing }; constexpr auto nothing = Nothing::nothing;
+
 // Object class - Base of object like types (as opposed value like types)
 struct Object
 {

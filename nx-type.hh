@@ -260,7 +260,7 @@ private:
 };
 
 // Tuple class - only 2, 3 and 4 element tuples are defined here. For generic tuples include <nx-util.hh>
-template<typename ... TS> class Tuple;
+template<typename ... TS> struct Tuple;
 
 // Special tuples
 template<typename X, typename Y> using Pair = Tuple<X, Y>;
