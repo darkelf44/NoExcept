@@ -180,6 +180,25 @@ template<typename T> constexpr nx::type::RemoveAnyReference<T> && rvalue(T && va
 template<typename T> constexpr T && forward(nx::type::RemoveAnyReference<T> & value)
 	{ return static_cast<T &&>(value); }
 
+// ------------------------------------------------------------ //
+//		Bits auxiliary
+// ------------------------------------------------------------ //
+
+// [FUNCTION] Rotate left - Fundamental bitwise operation, that is missing from C++
+inline constexpr uint32_t rotateBitsLeft(uint32_t x, uint32_t r)
+	{return (x << r) | (x >> (32 - r));}
+inline constexpr uint64_t rotateBitsLeft(uint64_t x, uint64_t r)
+	{return (x << r) | (x >> (64 - r));}
+
+// [FUNCTION] Rotate rigth - Fundamental bitwise operation, that is missing from C++
+inline constexpr uint32_t rotateBitsRight(uint32_t x, uint32_t r)
+	{return (x >> r) | (x << (32 - r));}
+inline constexpr uint64_t rotateBitsRight(uint64_t x, uint64_t r)
+	{return (x >> r) | (x << (64 - r));}
+
+// ------------------------------------------------------------ //
+//		Fundamental classes
+// ------------------------------------------------------------ //
 
 // Multi class - Multiple consecutive elements of the same type, or a fixed size array type
 template<typename T, size_t N> struct Multi
@@ -241,8 +260,13 @@ public:
 	inline const T & operator [] (size_t i) const
 		{return data[i];}
 	
+	// Clone
+	Array * clone() const
+		{return create(*this);}
+
 	// Allocators
-	static Array * create(size_t n);	
+	static Array * create(size_t n);
+	template<typename U> static Array * create(const Array<U> * array);
 	template<typename... TS> static Array * createFrom(TS && ... list);
 	
 	// Fill arrays
@@ -380,15 +404,29 @@ template<typename X, typename Y, typename Z, typename W> struct Tuple<X, Y, Z, W
 template<typename T> Array<T> * Array<T>::create(size_t n)
 {
 	// Allocate array with custom size
-	auto * array = nx::type::alloc<Array>(sizeof(Array) + n * sizeof(T));
+	auto * result = nx::type::alloc<Array>(sizeof(Array) + n * sizeof(T));
 	// Return null, if the allocation failed
-	if (!array) return nullptr;
+	if (!result) return nullptr;
 	// Create array (needs to be done in this function, because constructor is private)
-	new (static_cast<void *>(array)) Array(n);
+	new (static_cast<void *>(result)) Array(n);
 	// Create elements
-	nx::type::createArrayAt<T>(array->data, n);
-	// Return array
-	return array;
+	nx::type::createArrayAt<T>(result->data, n);
+	// Return result
+	return result;
+}
+
+template<typename T> template<typename U> Array<T> * Array<T>::create(const Array<U> * array)
+{
+	// Allocate array with custom size
+	auto * result = nx::type::alloc<Array>(sizeof(Array) + array->length * sizeof(T));
+	// Return null, if the allocation failed
+	if (!result) return nullptr;
+	// Create array (needs to be done in this function, because constructor is private)
+	new (static_cast<void *>(result)) Array(array->length);
+	// Create elements
+	nx::type::createArrayAtByCopy<T>(result->data, array->data, array->length);
+	// Return result
+	return result;
 }
 
 // Array allocator - creates a new array from a list of elements
@@ -396,15 +434,15 @@ template<typename T> template<typename... TS> Array<T> * Array<T>::createFrom(TS
 {
 	constexpr size_t n = sizeof...(list);
 	// Allocate array with custom size
-	auto * array = nx::type::alloc<Array>(sizeof(Array) + n * sizeof(T));
+	auto * result = nx::type::alloc<Array>(sizeof(Array) + n * sizeof(T));
 	// Return null, if the allocation failed
-	if (!array) return nullptr;
+	if (!result) return nullptr;
 	// Create array (needs to be done in this function, because constructor is private)
-	new (static_cast<void *>(array)) Array(n);
+	new (static_cast<void *>(result)) Array(n);
 	// Create elements
-	nx::type::createArrayAtFromList<T>(array->data, list...);
-	// Return array
-	return array;
+	nx::type::createArrayAtFromList<T>(result->data, list...);
+	// Return result
+	return result;
 }
 
 // Fill arrays

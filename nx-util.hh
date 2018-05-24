@@ -8,17 +8,58 @@
 // Namespace "nx"
 namespace nx {
 
-// [CLASS] In - Optional input only parameter. Can be constructed from "nothing". 
+// [CLASS] In - Optional input only parameter. Can be constructed from "nothing". (For mandatory input, just use "const T &") 
 template<typename T> class In
 {
+public:
+	// Constructors
+	In(const T & obj)
+		: ptr(& obj) {}
+	In(Nothing)
+		: ptr(nullptr) {}
+		
+	// Operator
+	bool operator bool()
+		{return ptr;}
+	
+	// Use parameter
+	bool provided() const
+		{return ptr;}
+	const T & get(const T & def) const
+		{return ptr ? * ptr : def;}
+
+private:
+	// Pointer to object
+	const T * ptr;
 };
 
-// [CLASS] In - Optional output only parameter. Can be constructed from "nothing". 
+// [CLASS] Out - Optional output only parameter. Can be constructed from "nothing". (For mandatory output, just use "T &") 
 template<typename T> class Out
 {
+	// Constructors
+	Out(T & obj)
+		: ptr(& obj) {}
+	Out(Nothing)
+		: ptr(nullptr) {}
+		
+	// Operator
+	bool operator bool()
+		{return ptr;}
+	
+	// Use parameter
+	bool provided() const
+		{return ptr;}
+	Out & set(T && val) const
+		{if (ptr) (* ptr) = rvalue(val); return * this;}
+	Out & set(const T & val) const
+		{if (ptr) (* ptr) = val; return * this;}
+	
+private:
+	// Pointer to object
+	const T * ptr;
 };
 
-// [CLASS] In - Optional input output parameter. Can be constructed from "nothing". 
+// [CLASS] InOut - Optional input output parameter. Can be constructed from "nothing". 
 template<typename T> class InOut
 {
 };
@@ -57,9 +98,9 @@ public:
 		{nx::type::destroyArrayAt(items, n); nx::type::free(items);}
 		
 	// Size & capacity
-	inline size_t size() const
+	inline size_t size() const noexcept
 		{return n;}
-	inline size_t capacity() const
+	inline size_t capacity() const noexcept
 		{return m;}
 		
 	void resize(size_t n);
@@ -67,9 +108,9 @@ public:
 	void compact();
 	
 	// Data
-	inline T * data()
+	inline T * data() noexcept
 		{return items;}
-	inline const T * data() const
+	inline const T * data() const noexcept
 		{return items;}
 	
 	// Getters
@@ -132,7 +173,7 @@ private:
 	
 	Implementation:
 	
-	Dictionary is implemented using two lists. The first contains nodes, these nodes combine the key, the hash of the
+	Dictionary is implemented using two arrays. The first contains nodes, these nodes combine the key, the hash of the
 	key, and the associated value. The second is the index table, this is a hash table, that contains indices into the
 	node list.
 	
@@ -147,12 +188,20 @@ public:
 	using Entry = Pair<K, V>;
 
 	// Constructors & destructors
-	Dictionary()
-		: nodes(nullptr), table(nullptr) {}
-	Dictionary(Dictionary && dict)
-		: config(dict.config), nodes(rvalue(dict.nodes)), table(rvalue(dict.table)) {}
+	Dictionary() noexcept
+		{}
+	Dictionary(Dictionary && dict) noexcept
+		: config(dict.config), n(dict.n), m(dict.m), nodes(dict.nodes), table(dict.table) {dict.nodes = nullptr; dict.table = nullptr;}
 	Dictionary(const Dictionary & dict)
-		: config(dict.config), nodes(dict.nodes), table(dict.table) {}
+		: config(dict.config), n(dict.n), m(dict.m), nodes(dict.nodes.clone()), table(dict.table.clone()) {}
+	~Dictionary() override
+		{delete nodes; delete table;}
+		
+	// Size & capacity
+	size_t size() const noexcept
+		{return n;}
+	size_t capacity() const noexcept
+		{return m;}
 
 private:
 	// Node type
@@ -168,9 +217,13 @@ private:
 	}
 	config;
 	
+	// size and capacity
+	size_t n = 0;
+	size_t m = 0;
+	
 	// Node list and index
-	List<Node> nodes;
-	List<byte> table;
+	Array<Node> * nodes = nullptr;
+	Array<byte> * table = nullptr;
 };
 
 // Tuple class - The real, generic version of the tuple COMING SOON!
@@ -373,12 +426,6 @@ template<typename K, typename V> struct Dictionary<K, V>::Node
 	// Constructors & destructors
 	Node() noexcept
 		: hash(0) {}
-	/*
-	Node(Node && node) noexcept(nx::type::isCreateNoexcept<Entry, Entry>())
-		: hash(node.hash) {if (hash) create(rvalue(node.entry));}
-	Node(const Node & node) noexcept(nx::type::isCreateNoexcept<Entry, Entry &>())
-		: hash(node.hash) {if (hash) create(node.entry);}
-		*/
 	~Node()
 		{if (hash != 0) destroy();}
 	
