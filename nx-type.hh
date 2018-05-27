@@ -172,10 +172,10 @@ using nx::type::typeid;
 
 // [FUNCTION] lvalue - Turns anything into an rvalue (Hey, it can be useful)
 template<typename T> constexpr nx::type::RemoveAnyReference<T> & lvalue(T && value)
-	{ return static_cast<T &>(value); }
+	{ return static_cast<nx::type::RemoveAnyReference<T> &>(value); }
 // [FUNCTION] rvalue - Same as std::move, turns anything into an lvalue
 template<typename T> constexpr nx::type::RemoveAnyReference<T> && rvalue(T && value)
-	{ return static_cast<T &&>(value); }
+	{ return static_cast<nx::type::RemoveAnyReference<T> &&>(value); }
 // [FUNCTION] forward - Same as std::forward, explicit cast to either rvalue or lvalue
 template<typename T> constexpr T && forward(nx::type::RemoveAnyReference<T> & value)
 	{ return static_cast<T &&>(value); }
