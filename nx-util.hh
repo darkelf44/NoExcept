@@ -8,62 +8,147 @@
 // Namespace "nx"
 namespace nx {
 
-// [CLASS] In - Optional input only parameter. Can be constructed from "nothing". (For mandatory input, just use "const T &") 
-template<typename T> class In
+// ------------------------------------------------------------ //
+//		Forward declarations 
+// ------------------------------------------------------------ //
+
+// Abstract classes
+template<typename T> class Iterator;
+
+// Numeric range
+template<typename T> class Range;
+
+// Containers
+template<typename T> class List;
+template<typename T> class Set;
+template<typename K, typename V> class Dictionary;
+
+// Optional parameters
+namespace opt {
+	template<typename T> class In;
+	template<typename T> class Out;
+	template<typename T> class InOut;
+}
+
+// Iterators
+namespace iter {
+	template<typename T> class Legacy;
+	template<typename T> class Virtual;
+}
+
+// ------------------------------------------------------------ //
+//		Abstract classes
+// ------------------------------------------------------------ //
+
+// [CLASS] Iterator - Base class of virtual iterators
+template<typename T> class Iterator : public Object
 {
 public:
-	// Constructors
-	In(const T & obj)
-		: ptr(& obj) {}
-	In(Nothing)
-		: ptr(nullptr) {}
-		
-	// Operator
-	bool operator bool()
-		{return ptr;}
+	virtual ~Iterator() {}
 	
-	// Use parameter
-	bool provided() const
-		{return ptr;}
-	const T & get(const T & def) const
-		{return ptr ? * ptr : def;}
-
-private:
-	// Pointer to object
-	const T * ptr;
+	virtual T last() const = 0;
+	
+	virtual T next() = 0;
+	virtual bool hasNext() const = 0;
+	
+	virtual T prev() = 0;
+	virtual bool hasPrev() const = 0;
 };
 
-// [CLASS] Out - Optional output only parameter. Can be constructed from "nothing". (For mandatory output, just use "T &") 
-template<typename T> class Out
+
+// ------------------------------------------------------------ //
+//		Numeric range
+// ------------------------------------------------------------ //
+
+/**
+	[CLASS] Range - Stores a linear sequence as a single convinient object
+	
+	For now, it can be used with the C++ foreach loop, to iterate over a range of numbers. It creates an STL compatible
+	Singular iterator, so it can be used in many places, where STL iterators can be.
+ */
+template<typename T> class Range
 {
-	// Constructors
-	Out(T & obj)
-		: ptr(& obj) {}
-	Out(Nothing)
-		: ptr(nullptr) {}
+public:
+	// Legacy Iterator
+	class Iter
+	{
+	public:
+		// Direction
+		const bool forward = true;
 		
-	// Operator
-	bool operator bool()
-		{return ptr;}
-	
-	// Use parameter
-	bool provided() const
-		{return ptr;}
-	Out & set(T && val) const
-		{if (ptr) (* ptr) = rvalue(val); return * this;}
-	Out & set(const T & val) const
-		{if (ptr) (* ptr) = val; return * this;}
+		// Contructors
+		Iter()
+			{}
+		Iter(T value, T end, T step)
+			: forward(step > 0), _value(rvalue(value)), _end(rvalue(end)), _step(rvalue(step)) {}
+		
+		// NX iterator interface
+		T last() const
+			{return _value;}
+		T next()
+			{_value += _step; return _value;}
+		bool hasNext() const
+			{return forward ? _value < _end : _value > _end;}
+		
+	private:
+		// Remaining range
+		T _value;
+		T _end;
+		T _step;
+	};
+
+	// Constructor
+	Range(T start, T end, T step)
+		: _start(rvalue(start)), _end(rvalue(end)), _step(rvalue(step)) {}
+		
+	// NX iterator methods
+	inline Iter<T> iter() const
+		{return Iter<T>(_start, _end, _step);}
+
+	// STL iterator methods
+	inline iter::Legacy<Iter<T>> begin() const
+		{return iter::Legacy<Iter<T>>(_start, _end, _step);}
+	inline iter::Legacy<Iter<T>> end() const
+		{return iter::Legacy<Iter<T>>();}
 	
 private:
-	// Pointer to object
-	const T * ptr;
+	T _start;
+	T _end;
+	T _step;
 };
 
-// [CLASS] InOut - Optional input output parameter. Can be constructed from "nothing". 
-template<typename T> class InOut
-{
-};
+inline Range<int32_t> range(int32_t end)
+	{return Range<int32_t>(0, end, 1);}
+inline Range<int32_t> range(int32_t start, int32_t end, int32_t step = 1)
+	{return Range<int32_t>(start, end, step);}
+inline Range<int64_t> range(int64_t end)
+	{return Range<int64_t>(0, end, 1);}
+inline Range<int64_t> range(int64_t start, int64_t end, int64_t step = 1)
+	{return Range<int64_t>(start, end, step);}
 
+inline Range<uint32_t> range(uint32_t end)
+	{return Range<uint32_t>(0, end, 1);}
+inline Range<uint32_t> range(uint32_t start, uint32_t end, uint32_t step = 1)
+	{return Range<uint32_t>(start, end, step);}
+inline Range<uint64_t> range(uint64_t end)
+	{return Range<uint64_t>(0, end, 1);}
+inline Range<uint64_t> range(uint64_t start, uint64_t end, uint64_t step = 1)
+	{return Range<uint64_t>(start, end, step);}
+
+inline Range<float> range(float end)
+	{return Range<float>(0.f, end, 1.f);}
+inline Range<float> range(float start, float end, float step = 1.f)
+	{return Range<float>(start, end, step);}
+inline Range<double> range(double end)
+	{return Range<double>(0.0, end, 1.0);}
+inline Range<double> range(double start, double end, double step = 1.0)
+	{return Range<double>(start, end, step);}
+
+	
+// ------------------------------------------------------------ //
+//		Containers
+// ------------------------------------------------------------ //
+	
 /**
 	[CLASS] List - Dynamically resizable arrays
 	
@@ -75,7 +160,7 @@ template<typename T> class InOut
 	in array, would reduce the size of the structure to a single pointer.
 	
 	But there is a very nice property of the current implementation, that we desperately want to keep: Creating an
-	empty list does not need allocate any additional memory. This means creating empty lists are VERY fast, and VERY
+	empty list does not need allocate any additional memory. This means creating an empty list is VERY fast, and VERY
 	cheap to do so.
 	
 	To achive the same with the single pointer implementation, it would need additional branching to determine the
@@ -124,7 +209,7 @@ public:
 	void extend(List && list);
 	void extend(const List & list);
 	
-	// Itertator methods
+	// STL itertator methods
 	inline T * begin() noexcept
 		{return items;}
 	inline const T * begin() const noexcept
@@ -192,8 +277,7 @@ public:
 		{}
 	Dictionary(Dictionary && dict) noexcept
 		: config(dict.config), n(dict.n), m(dict.m), nodes(dict.nodes), table(dict.table) {dict.nodes = nullptr; dict.table = nullptr;}
-	Dictionary(const Dictionary & dict)
-		: config(dict.config), n(dict.n), m(dict.m), nodes(dict.nodes.clone()), table(dict.table.clone()) {}
+	Dictionary(const Dictionary & dict);
 	~Dictionary() override
 		{delete nodes; delete table;}
 		
@@ -226,10 +310,162 @@ private:
 	Array<byte> * table = nullptr;
 };
 
-// Tuple class - The real, generic version of the tuple COMING SOON!
-template<typename ... TS> struct Tuple
+
+// ------------------------------------------------------------ //
+//		Optional parameters
+// ------------------------------------------------------------ //
+
+// Namespace "nx::opt"
+namespace opt {
+
+// [CLASS] In - Optional input only parameter. Can be constructed from "nothing". (For mandatory input, use "const T &") 
+template<typename T> class In
 {
+public:
+	// Constructors
+	In(const T & obj)
+		: ptr(& obj) {}
+	In(Nothing)
+		: ptr(nullptr) {}
+
+	// Operator
+	operator bool()
+		{return ptr;}
+
+	// Use parameter
+	bool provided() const
+		{return ptr;}
+	const T & get(const T & def) const
+		{return ptr ? * ptr : def;}
+
+private:
+	// Pointer to object
+	const T * ptr;
 };
+
+
+// [CLASS] Out - Optional output only parameter. Can be constructed from "nothing". (For mandatory output, use "T &") 
+template<typename T> class Out
+{
+	// Constructors
+	Out(T & obj)
+		: ptr(& obj) {}
+	Out(Nothing)
+		: ptr(nullptr) {}
+
+	// Operator
+	operator bool()
+		{return ptr;}
+
+	// Use parameter
+	bool provided() const
+		{return ptr;}
+	void & set(T && val) const
+		{if (ptr) (* ptr) = rvalue(val);}
+	void & set(const T & val) const
+		{if (ptr) (* ptr) = val;}
+
+private:
+	// Pointer to object
+	const T * ptr;
+};
+
+
+// [CLASS] InOut - Optional input-output parameter. Can be constructed from "nothing". (For mandatory input-output, use "T &")
+template<typename T> class InOut
+{
+	// Constructors
+	InOut(T & obj)
+		: ptr(& obj) {}
+	InOut(Nothing)
+		: ptr(nullptr) {}
+
+	// Operator
+	operator bool()
+		{return ptr;}
+		
+	// Use parameter
+	bool provided() const
+		{return ptr;}
+	void & set(T && val) const
+		{if (ptr) (* ptr) = rvalue(val);}
+	void & set(const T & val) const
+		{if (ptr) (* ptr) = val;}
+	const T & get(const T & def) const
+		{return ptr ? * ptr : def;}
+
+private:
+	// Pointer to object
+	const T * ptr;
+};
+
+
+// Close namespace "nx::opt"
+}
+
+
+// ------------------------------------------------------------ //
+//		Iterators 
+// ------------------------------------------------------------ //
+
+// Namespace "nx::iter"
+namespace iter {
+	
+// [CLASS] Legacy - Coverts singular iterators to legacy C++ iterators, that will work with foreach
+template<typename T> class Legacy
+{
+public:
+	// Element type
+	using Type = decltype(param<T>().last());
+
+	// Constructor
+	template<typename... TS> Legacy(TS && ... args)
+		: iterator(forward<TS>(args) ...) {}
+		
+	// Legacy C++ iterator interface
+	Type operator * () const
+		{return iterator.last();}
+	Legacy & operator ++ ()
+		{iterator.next(); return * this;}
+	bool operator != (const Legacy &)
+		{return iterator.hasNext();}
+	
+private:
+	T iterator;
+};
+
+// [CLASS] Virtual - Wraps a simple iterator, and creates one with a virtual interface
+template<typename T> class Virtual : public Iterator<decltype(param<T>().last())>
+{
+public:
+	// Element type
+	using Type = decltype(param<T>().last());
+	
+	// Constructor
+	template<typename... TS> Virtual(TS && ... args)
+		: iterator(forward<TS>(args)...) {}
+	
+	// Iterator methods
+	Type last() const override
+		{return iterator.last();}
+
+	Type next() override
+		{return iterator.next();}
+	bool hasNext() override
+		{return iterator.hasNext();}
+		
+	Type prev() override
+		{return iterator.prev();}
+	bool hasPrev() override
+		{return iterator.hasPrev();}
+
+private:
+	T iterator;
+}
+	
+// Close namespace "nx::iter"
+}
+
 
 // ------------------------------------------------------------ //
 //		Utility functions
