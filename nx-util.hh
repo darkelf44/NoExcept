@@ -102,14 +102,14 @@ public:
 		: _start(rvalue(start)), _end(rvalue(end)), _step(rvalue(step)) {}
 		
 	// NX iterator methods
-	inline Iter<T> iter() const
-		{return Iter<T>(_start, _end, _step);}
+	inline Iter iter() const
+		{return Iter(_start, _end, _step);}
 
 	// STL iterator methods
-	inline iter::Legacy<Iter<T>> begin() const
-		{return iter::Legacy<Iter<T>>(_start, _end, _step);}
-	inline iter::Legacy<Iter<T>> end() const
-		{return iter::Legacy<Iter<T>>();}
+	inline iter::Legacy<Iter> begin() const
+		{return iter::Legacy<Iter>(_start, _end, _step);}
+	inline iter::Legacy<Iter> end() const
+		{return iter::Legacy<Iter>();}
 	
 private:
 	T _start;
@@ -360,9 +360,9 @@ template<typename T> class Out
 	// Use parameter
 	bool provided() const
 		{return ptr;}
-	void & set(T && val) const
+	void set(T && val) const
 		{if (ptr) (* ptr) = rvalue(val);}
-	void & set(const T & val) const
+	void set(const T & val) const
 		{if (ptr) (* ptr) = val;}
 
 private:
@@ -387,9 +387,9 @@ template<typename T> class InOut
 	// Use parameter
 	bool provided() const
 		{return ptr;}
-	void & set(T && val) const
+	void set(T && val) const
 		{if (ptr) (* ptr) = rvalue(val);}
-	void & set(const T & val) const
+	void set(const T & val) const
 		{if (ptr) (* ptr) = val;}
 	const T & get(const T & def) const
 		{return ptr ? * ptr : def;}
@@ -461,7 +461,7 @@ public:
 
 private:
 	T iterator;
-}
+};
 	
 // Close namespace "nx::iter"
 }

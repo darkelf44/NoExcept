@@ -30,6 +30,91 @@ template<> int TestData<int>::select[] = {
 	0xFFFFFFFF_i, 0xFFFFFFF0_i, 0xFFFFFF00_i, 0xFFFFF000_i, 0xFFFF0000_i, 0xFFF00000_i, 0xFF000000_i, 0xF0000000_i
 };
 
+void TestRange(nx::Testing & test)
+{
+	test.runCase( "Loops" , [] (bool)
+		{
+			// Range<int>
+			{
+				int n;
+				int j;
+
+				j = 0;
+				for (int i: nx::range(10))
+					expectEqual(j ++, i);
+				expectEqual(10, j);
+
+				j = 10;
+				for (int i: nx::range(10, 0, -1))
+					expectEqual(j --, i);
+				expectEqual(0, j);
+				
+				n = 0;
+				j = 0;
+				for (int i: nx::range(0, 10, 3))
+				{
+					expectEqual(j, i);
+					++ n;
+					j += 3;
+				}
+				expectEqual(4, n);
+				expectEqual(12, j);
+				
+				n = 0;
+				j = 10;
+				for (int i: nx::range(10, 0, -3))
+				{
+					expectEqual(j, i);
+					++ n;
+					j -= 3;
+				}
+				expectEqual(4, n);
+				expectEqual(-2, j);
+				
+			}
+			
+			// Range<double>
+			{
+				int n, j;
+				double g;
+				
+				j = 0;
+				for (double f: nx::range(10.0))
+				{
+					expectEqual(double(j++), f);
+				}
+				expectEqual(10, j);
+				
+				j = 10;
+				for (double f: nx::range(10.0, 0.0, -1.0))
+					expectEqual(double(j--), f);
+				expectEqual(0, j);
+				
+				n = 0;
+				g = 0.0;
+				for (double f: nx::range(0.0, 10.0, 3.0/7.0))
+				{
+					expectEqual(g, f);
+					++ n;
+					g += 3.0/7.0;
+				}
+				expectEqual(24, n);
+				
+				n = 0;
+				g = 10.0;
+				for (double f: nx::range(10.0, 0.0, -3.0/7.0))
+				{
+					expectEqual(g, f);
+					++ n;
+					g -= 3.0/7.0;
+				}
+				expectEqual(24, n);
+			}			
+		}
+	);
+}
+
+
 template<typename T> void TestList(nx::Testing & test)
 {
 	test.runCase( "Sanity" , [] (bool)	// List sanity test - Make sure nothing is broken from the start
@@ -41,7 +126,11 @@ template<typename T> void TestList(nx::Testing & test)
 		}
 	);
 	
-	test.runCase( "Resize & Reserve" , [] (bool) {});
+	test.runCase( "Resize & Reserve" , [] (bool)
+		{
+			
+		}
+	);
 	
 	test.runCase( "Append & Extend" , [] (bool)
 		{
@@ -85,5 +174,8 @@ template<typename T> void TestList(nx::Testing & test)
 
 int main()
 {
-	return nx::Testing::get().runGroup("List", TestList<int>);
+	nx::Testing::get().runGroup("Range", TestRange);
+	nx::Testing::get().runGroup("List", TestList<int>);
+	
+	return 0;
 }
