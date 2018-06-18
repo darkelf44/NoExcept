@@ -1,0 +1,34 @@
+// Include test framework
+#include "nx-test.hh"
+
+// Include "nx" library
+
+void Test(nx::Testing & test)
+{
+	test.runCase("", [] (bool)
+		{
+		}
+	);
+
+	test.runCase("", [] (bool)
+		{
+		}
+	);
+
+	test.runCase("", [] (bool)
+		{
+		}
+	);
+}
+
+void TestSession(nx::Testing & test)
+{
+	test.runGroup("", Test);
+	test.runGroup("", Test);
+	test.runGroup("", Test);
+}
+
+int main()
+{
+	return nx::Testing::get().runSession("", TestSession);
+}

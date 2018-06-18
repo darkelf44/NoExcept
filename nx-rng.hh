@@ -12,44 +12,27 @@ namespace nx { namespace rng {
 template<typename T> class IGenerator
 {
 public:
-	virtual ~Generator() = 0;
+	virtual ~IGenerator() = default;
 	
-	virtual T last() = 0 const;
+	virtual T last() const = 0;
 	virtual T next() = 0;
 	virtual T jump() = 0;
 };
 
-// [INTERFACE] Generator - Interface for random number generator with extra functions to manage its internal state
-template<typename T> class IFullGenerator : public IGenerator
-{
-public:
-	virtual void reset(T seed) = 0;
-	virtual void reset(const char * seed, size_t len) = 0;
-
-	virtual T seed() const = 0;
-	virtual uint64_t steps() const = 0;
-	virtual uint64_t jumps() const = 0;
-	
-	virtual bool importState(Array<byte> * state) = 0;
-	virtual UniquePtr<Array<byte>> exportState() const = 0;
-};
-
 template<typename T> class AbstractGenerator : public Object, public virtual IGenerator<T>
 {
+public:
 	~AbstractGenerator() = default;
 };
 
-// Namespace "nx::rng::slim"
-namespace slim {
-
-// Scrambler for xorshift and derivative PRNGs
+// Scrambler for xorshift and similar PRNGs
 enum class Scrambler { None, Plus, Star, StarStar };
 
 // Little PRGN for extending a 64 bit seed - Looks random enough to me ...
-inline constexpr uint64_t mutateSeed(uint64_t & seed) noexcept
+inline uint64_t mutateSeed(uint64_t & seed) noexcept
 	{return seed = seed * 0xa06eae275b4e718f + 0x1e5c4e6a2cc40bef;}
 
-// Xorshiro128 generator - Tier 1: "You heared somewhere that linear generators are bad, and you want something better"
+// Xorshiro128 generator - Tier 1: "Beginner"
 template<Scrambler S> class Xorshiro128 : public AbstractGenerator<uint64_t>
 {
 public:
@@ -62,13 +45,13 @@ public:
 	Xorshiro128(const char * seed, size_t len) noexcept
 		{This::reset(seed, len);}
 	
-	void reset(T seed) override noexcept
+	void reset(uint64_t seed) noexcept
 	{
 		state[0] = seed;
 		state[1] = mutateSeed(seed);
 	}
 	
-	uint64_t last() const override noexcept
+	uint64_t last() const noexcept override
 	{
 		if (S == Scrambler::None)
 			return state[0];
@@ -79,11 +62,11 @@ public:
 		if (S == Scrambler::Star)
 			return state[0] * 0x9e3779b97f4a7c13;
 		
-		if (S == Scrambler::StarStart)
+		if (S == Scrambler::StarStar)
 			return rotateBitsLeft(state[0] * 5, 7) * 9;
 	}
 	
-	uint64_t next() override noexcept
+	uint64_t next() noexcept override
 	{
 		uint64_t x = state[0];
 		uint64_t y = state[1];
@@ -102,8 +85,11 @@ public:
 		return This::last();
 	}
 	
-	uint64_t jump() override noexcept
+	uint64_t jump() noexcept override
 	{
+		// Polynomial for Jump function (depends on the value of <a, b, c> in the algorithm)
+		static constexpr uint64_t jump_function[2] = {0xdf900294d8f554a5, 0x170865df4b3201fc};
+		
 		uint64_t x = 0;
 		uint64_t y = 0;
 		
@@ -129,15 +115,12 @@ public:
 		return This::last();
 	}
 	
-private:
-	// Polynomial for Jump function (depends on the value of <a, b, c> in the algorithm)
-	static constexpr uint64_t jump_function[2] = {0xdf900294d8f554a5, 0x170865df4b3201fc};
-	
+private:	
 	// Internal 128 bit state
 	uint64_t state[2];
 };
 
-// Xorshiro256 generator - Tier 2: "You would use a 128 bit generator, but 256 bit sound somewhat better."
+// Xorshiro256 generator - Tier 2: "Advanced user or PRNG Nerd"
 template<Scrambler S> class Xorshiro256 : public AbstractGenerator<uint64_t>
 {
 public:
@@ -150,7 +133,7 @@ public:
 	Xorshiro256(const char * seed, size_t len) noexcept
 		{This::reset(seed, len);}
 	
-	void reset(T seed) override noexcept
+	void reset(uint64_t seed) noexcept
 	{
 		state[0] = seed;
 		state[1] = mutateSeed(seed);
@@ -158,7 +141,7 @@ public:
 		state[3] = mutateSeed(seed);
 	}
 	
-	uint64_t last() const override noexcept
+	uint64_t last() const noexcept override
 	{
 		if (S == Scrambler::None)
 			return state[0];
@@ -169,11 +152,11 @@ public:
 		if (S == Scrambler::Star)
 			return state[0] * 0x9e3779b97f4a7c13;
 		
-		if (S == Scrambler::StarStart)
+		if (S == Scrambler::StarStar)
 			return rotateBitsLeft(state[0] * 5, 7) * 9;
 	}	
 	
-	uint64_t next() override noexcept
+	uint64_t next() noexcept override
 	{
 		// Alpgorithm parameters
 		static constexpr uint64_t a = 17;
@@ -194,8 +177,11 @@ public:
 		return This::last();
 	}
 	
-	uint64_t jump() override noexcept
+	uint64_t jump() noexcept
 	{
+		// Polynomial for Jump function (depends on the value of <a, b> in the algorithm)
+		static constexpr uint64_t jump_function[4] = { 0x180ec6d33cfd0aba, 0xd5a61266f0c9392c, 0xa9582618e03fc9aa, 0x39abdc4529b1661c };
+
 		uint64_t x = 0;
 		uint64_t y = 0;
 		uint64_t z = 0;
@@ -228,32 +214,30 @@ public:
 	}
 	
 private:
-	// Polynomial for Jump function (depends on the value of <a, b> in the algorithm)
-	static constexpr uint64_t jump_function[4] = { 0x180ec6d33cfd0aba, 0xd5a61266f0c9392c, 0xa9582618e03fc9aa, 0x39abdc4529b1661c };
-
 	// Internal 256 bit state
 	uint64_t state[4];
 };
 
+// Xorshiro512 generator - Tier 2: "Overkill"
 template<Scrambler S> class Xorshiro512 : public AbstractGenerator<uint64_t>
 {
 	// Typename for forcing static binding
-	using This = Xorshiro256;
+	using This = Xorshiro512;
 
 	// Constructors
-	Xorshiro256(uint64_t seed = 42) noexcept
+	Xorshiro512(uint64_t seed = 42) noexcept
 		{This::reset(seed);}
-	Xorshiro256(const char * seed, size_t len) noexcept
+	Xorshiro512(const char * seed, size_t len) noexcept
 		{This::reset(seed, len);}
 	
-	void reset(T seed) override noexcept
+	void reset(uint64_t seed) noexcept
 	{
 		state[0] = seed;
 		for (size_t i = 1; i < 8; ++ i)
 			state[i] = mutateSeed(seed);
 	}
 	
-	uint64_t last() const override noexcept
+	uint64_t last() const noexcept override
 	{
 		if (S == Scrambler::None)
 			return state[0];
@@ -264,11 +248,11 @@ template<Scrambler S> class Xorshiro512 : public AbstractGenerator<uint64_t>
 		if (S == Scrambler::Star)
 			return state[0] * 0x9e3779b97f4a7c13;
 		
-		if (S == Scrambler::StarStart)
+		if (S == Scrambler::StarStar)
 			return rotateBitsLeft(state[0] * 5, 7) * 9;
 	}	
 	
-	uint64_t next() override noexcept
+	uint64_t next() noexcept override
 	{
 		// Alpgorithm parameters
 		static constexpr uint64_t a = 11;
@@ -293,8 +277,14 @@ template<Scrambler S> class Xorshiro512 : public AbstractGenerator<uint64_t>
 		return This::last();
 	}
 	
-	uint64_t jump() override noexcept
+	uint64_t jump() noexcept
 	{
+		// Polynomial for Jump function (depends on the value of <a, b> in the algorithm)
+		static constexpr uint64_t jump_function[8] = {
+			0x33ed89b6e7a353f9, 0x760083d7955323be, 0x2837f2fbb5f22fae, 0x4b8c5674d309511c,
+			0xb11ac47a7ba28c25, 0xf1be7667092bcc1c, 0x53851efdb6df0aaf, 0x1ebbc8b23eaf25db
+		};
+		
 		uint64_t x[8] = {0};
 		
 		// Calculate new internal state from the current one
@@ -320,18 +310,12 @@ template<Scrambler S> class Xorshiro512 : public AbstractGenerator<uint64_t>
 	}
 	
 private:
-	// Polynomial for Jump function (depends on the value of <a, b> in the algorithm)
-	static constexpr uint64_t jump_function[8] = {
-		0x33ed89b6e7a353f9, 0x760083d7955323be, 0x2837f2fbb5f22fae, 0x4b8c5674d309511c,
-		0xb11ac47a7ba28c25, 0xf1be7667092bcc1c, 0x53851efdb6df0aaf, 0x1ebbc8b23eaf25db
-	};
-
-	// Internal 256 bit state
+	// Internal 512 bit state
 	uint64_t state[8];
-}
+};
 
 
-// Xorshiro1024 generator - Tier 4: "Beyond overkill. The output of this generator will never repeat itself in the lifetime of the universe"
+// Xorshiro1024 generator - Tier 4: "Beyond overkill"
 template<Scrambler S> class Xorshiro1024 : public AbstractGenerator<uint64_t>
 {
 public:
@@ -344,14 +328,14 @@ public:
 	Xorshiro1024(const char * seed, size_t len) noexcept
 		{This::reset(seed, len);}
 	
-	void reset(T seed) override noexcept
+	void reset(uint64_t seed) noexcept
 	{
 		state[0] = seed;
 		for (size_t i = 1; i < 16; ++ i)
 			state[i] = mutateSeed(seed);
 	}
 	
-	uint64_t last() const override noexcept
+	uint64_t last() const noexcept override
 	{
 		if (S == Scrambler::None)
 			return state[shift];
@@ -362,14 +346,14 @@ public:
 		if (S == Scrambler::Star)
 			return state[shift] * 0x9e3779b97f4a7c13;
 		
-		if (S == Scrambler::StarStart)
+		if (S == Scrambler::StarStar)
 			return rotateBitsLeft(state[shift] * 5, 7) * 9;
 	}	
 	
-	uint64_t next() override noexcept
+	uint64_t next() noexcept override
 	{
 		const size_t p = shift;
-		const size_t q = (shift + 1) & 0xF
+		const size_t q = (shift + 1) & 0xF;
 		shift = q;
 		
 		uint64_t x = state[p];
@@ -389,13 +373,13 @@ public:
 		return This::last();
 	}
 	
-	uint64_t jump() override noexcept
+	uint64_t jump() noexcept override
 	{
 		// TODO: Implement Jump function
 	}
 	
 private:
-	// Internal 128 bit state
+	// Internal 1024 bit state + shift count
 	size_t   shift = 0;
 	uint64_t state[16];
 };
@@ -413,16 +397,16 @@ using Xorshiro256s = Xorshiro256<Scrambler::Star>;
 using Xorshiro256ss = Xorshiro256<Scrambler::StarStar>;
 
 // 512 bit Xorshiro generators (-R variant)
+using Xorshiro512n = Xorshiro512<Scrambler::None>;
+using Xorshiro512p = Xorshiro512<Scrambler::Plus>;
+using Xorshiro512s = Xorshiro512<Scrambler::Star>;
+using Xorshiro512ss = Xorshiro512<Scrambler::StarStar>;
 
 // 1024 bit Xorshiro generators (+O variant)
 using Xorshiro1024n = Xorshiro1024<Scrambler::None>;
 using Xorshiro1024p = Xorshiro1024<Scrambler::Plus>;
 using Xorshiro1024s = Xorshiro1024<Scrambler::Star>;
 using Xorshiro1024ss = Xorshiro1024<Scrambler::StarStar>;
-
-	
-// Close namespace "nx::rng::slim"
-}
 
 // Close namespace "nx::rng"
 }}

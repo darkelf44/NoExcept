@@ -46,5 +46,8 @@ del /Q test\obj\*
 %MAKETEST% test\test-nx-util.cc %TESTLIBS% -o test\bin\test-nx-util.exe && test\bin\test-nx-util.exe
 %MAKETEST% %ALTFLAGS% test\test-nx-util.cc %TESTLIBS% -o test\bin\test-nx-util[alt].exe && test\bin\test-nx-util[alt].exe
 
+%MAKETEST% test\test-nx-rng.cc %TESTLIBS% -o test\bin\test-nx-rng.exe && test\bin\test-nx-rng.exe
+%MAKETEST% %ALTFLAGS% test\test-nx-rng.cc %TESTLIBS% -o test\bin\test-nx-rng[alt].exe && test\bin\test-nx-rng[alt].exe
+
 
 endlocal
