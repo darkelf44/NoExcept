@@ -3,6 +3,7 @@
 
 // Include "nx" library
 #include <nx-rng.hh>
+#include <nx-util.hh>
 
 template<typename T> void TestRandomGenerator(nx::Testing & test)
 {
@@ -17,6 +18,11 @@ template<typename T> void TestRandomGenerator(nx::Testing & test)
 	test.runCase("Reproducibility", [] (bool)
 		{
 			T rand;
+			
+			for (int i : nx::range(10))
+			{
+				nx::skip(i);
+			}				
 		}
 	);
 }

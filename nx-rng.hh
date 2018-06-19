@@ -7,6 +7,59 @@
 
 // Namespace "nx::rng"
 namespace nx { namespace rng {
+	
+// ------------------------------------------------------------ //
+//		Forward declarations
+// ------------------------------------------------------------ //
+
+// Abstract classes
+template<typename T> class IGenerator;
+template<typename T> class AbstractGenerator;
+
+// Scrambler for PRNGs similar to xorshift
+enum class Scrambler { None, Plus, Star, StarStar };
+
+// Generators WIP: The implementationof these classes may change
+template<Scrambler S> class Xorshift128;
+template<Scrambler S> class Xorshift256;
+template<Scrambler S> class Xorshift512;
+template<Scrambler S> class Xorshift1024;
+
+template<Scrambler S> class Xorshiro128;
+template<Scrambler S> class Xorshiro256;
+template<Scrambler S> class Xorshiro512;
+template<Scrambler S> class Xorshiro1024;
+
+// 128 bit Xorshiro generators (+O variant)
+using Xorshiro128n = Xorshiro128<Scrambler::None>;
+using Xorshiro128p = Xorshiro128<Scrambler::Plus>;
+using Xorshiro128s = Xorshiro128<Scrambler::Star>;
+using Xorshiro128ss = Xorshiro128<Scrambler::StarStar>;
+
+// 256 bit Xorshiro generators (-R variant)
+using Xorshiro256n = Xorshiro256<Scrambler::None>;
+using Xorshiro256p = Xorshiro256<Scrambler::Plus>;
+using Xorshiro256s = Xorshiro256<Scrambler::Star>;
+using Xorshiro256ss = Xorshiro256<Scrambler::StarStar>;
+
+// 512 bit Xorshiro generators (-R variant)
+using Xorshiro512n = Xorshiro512<Scrambler::None>;
+using Xorshiro512p = Xorshiro512<Scrambler::Plus>;
+using Xorshiro512s = Xorshiro512<Scrambler::Star>;
+using Xorshiro512ss = Xorshiro512<Scrambler::StarStar>;
+
+// 1024 bit Xorshiro generators (+O variant)
+using Xorshiro1024n = Xorshiro1024<Scrambler::None>;
+using Xorshiro1024p = Xorshiro1024<Scrambler::Plus>;
+using Xorshiro1024s = Xorshiro1024<Scrambler::Star>;
+using Xorshiro1024ss = Xorshiro1024<Scrambler::StarStar>;
+
+// default random generator type
+using Random = Xorshiro128ss;
+
+// ------------------------------------------------------------ //
+//		Abstract classes
+// ------------------------------------------------------------ //
 
 // [INTERFACE] Generator - Interface for random number generator
 template<typename T> class IGenerator
@@ -25,13 +78,38 @@ public:
 	~AbstractGenerator() = default;
 };
 
-// Scrambler for xorshift and similar PRNGs
-enum class Scrambler { None, Plus, Star, StarStar };
+// ------------------------------------------------------------ //
+//		Utilities
+// ------------------------------------------------------------ //
 
 // Little PRGN for extending a 64 bit seed - Looks random enough to me ...
 inline uint64_t mutateSeed(uint64_t & seed) noexcept
 	{return seed = seed * 0xa06eae275b4e718f + 0x1e5c4e6a2cc40bef;}
+	
+// Create a random array
+template<typename R> Array<uint64_t> * createRandomArray(R & random, size_t length) noexcept
+{
+	// Create array
+	auto result = new Array<uint64_t>(length);
+	
+	// Fill array with random data
+	if (result)
+		for (size_t i = 0; i < length; ++ i)
+			(*result)[i] = random.next();
+	
+	// Return it 
+	return result;
+}
 
+// Create a random array
+template<typename R> UniquePtr<Array<uint64_t>> makeRandomArray(R & random, size_t length) noexcept
+	{return UniquePtr<Array<uint64_t>>(createRandomArray(random, length));}
+
+
+// ------------------------------------------------------------ //
+//		Generators
+// ------------------------------------------------------------ //
+	
 // Xorshiro128 generator - Tier 1: "Beginner"
 template<Scrambler S> class Xorshiro128 : public AbstractGenerator<uint64_t>
 {
@@ -383,30 +461,6 @@ private:
 	size_t   shift = 0;
 	uint64_t state[16];
 };
-
-// 128 bit Xorshiro generators (+O variant)
-using Xorshiro128n = Xorshiro128<Scrambler::None>;
-using Xorshiro128p = Xorshiro128<Scrambler::Plus>;
-using Xorshiro128s = Xorshiro128<Scrambler::Star>;
-using Xorshiro128ss = Xorshiro128<Scrambler::StarStar>;
-
-// 256 bit Xorshiro generators (-R variant)
-using Xorshiro256n = Xorshiro256<Scrambler::None>;
-using Xorshiro256p = Xorshiro256<Scrambler::Plus>;
-using Xorshiro256s = Xorshiro256<Scrambler::Star>;
-using Xorshiro256ss = Xorshiro256<Scrambler::StarStar>;
-
-// 512 bit Xorshiro generators (-R variant)
-using Xorshiro512n = Xorshiro512<Scrambler::None>;
-using Xorshiro512p = Xorshiro512<Scrambler::Plus>;
-using Xorshiro512s = Xorshiro512<Scrambler::Star>;
-using Xorshiro512ss = Xorshiro512<Scrambler::StarStar>;
-
-// 1024 bit Xorshiro generators (+O variant)
-using Xorshiro1024n = Xorshiro1024<Scrambler::None>;
-using Xorshiro1024p = Xorshiro1024<Scrambler::Plus>;
-using Xorshiro1024s = Xorshiro1024<Scrambler::Star>;
-using Xorshiro1024ss = Xorshiro1024<Scrambler::StarStar>;
 
 // Close namespace "nx::rng"
 }}

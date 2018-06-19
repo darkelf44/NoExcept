@@ -375,12 +375,12 @@ template<typename X, typename Y, typename Z, typename W> struct Tuple<X, Y, Z, W
 	Tuple(const Tuple &) = default;
 	
 	template<typename T1, typename T2, typename T3, typename T4> Tuple(Tuple<T1, T2, T3, T4> && tuple)
-		: first(rvalue(tuple.first)), second(rvalue(tuple.second)), third(rvalue(tuple.third)) {}
+		: first(rvalue(tuple.first)), second(rvalue(tuple.second)), third(rvalue(tuple.third)), fourth(rvalue(tuple.fourth)) {}
 	template<typename T1, typename T2, typename T3, typename T4> Tuple(const Tuple<T1, T2, T3, T4> & tuple)
-		: first(tuple.first), second(tuple.second), third(tuple.third) {}
+		: first(tuple.first), second(tuple.second), third(tuple.third), fourth(tuple.fourth) {}
 	
-	template<typename T1, typename T2, typename T3, typename T4> Tuple(T1 && t1, T2 && t2, T3 && t3)
-		: first(forward<T1 &&>(t1)), second(forward<T2 &&>(t2)), third(forward<T3 &&>(t3)) {}
+	template<typename T1, typename T2, typename T3, typename T4> Tuple(T1 && t1, T2 && t2, T3 && t3, T4 && t4)
+		: first(forward<T1 &&>(t1)), second(forward<T2 &&>(t2)), third(forward<T3 &&>(t3)), fourth(forward<T4 &&>(t4)) {}
 		
 	// Methods: TODO: somehow implement this
 	template<size_t I> meta::Select<I, X, Y, Z, W> & at();
