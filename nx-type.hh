@@ -408,7 +408,7 @@ template<typename T> Array<T> * Array<T>::create(size_t n)
 	// Return null, if the allocation failed
 	if (!result) return nullptr;
 	// Create array (needs to be done in this function, because constructor is private)
-	new (static_cast<void *>(result)) Array(n);
+	new (static_cast<void *>(result), nothing) Array(n);
 	// Create elements
 	nx::type::createArrayAt<T>(result->data, n);
 	// Return result
@@ -422,7 +422,7 @@ template<typename T> template<typename U> Array<T> * Array<T>::create(const Arra
 	// Return null, if the allocation failed
 	if (!result) return nullptr;
 	// Create array (needs to be done in this function, because constructor is private)
-	new (static_cast<void *>(result)) Array(array->length);
+	new (static_cast<void *>(result), nothing) Array(array->length);
 	// Create elements
 	nx::type::createArrayAtByCopy<T>(result->data, array->data, array->length);
 	// Return result
@@ -438,7 +438,7 @@ template<typename T> template<typename... TS> Array<T> * Array<T>::createFrom(TS
 	// Return null, if the allocation failed
 	if (!result) return nullptr;
 	// Create array (needs to be done in this function, because constructor is private)
-	new (static_cast<void *>(result)) Array(n);
+	new (static_cast<void *>(result), nothing) Array(n);
 	// Create elements
 	nx::type::createArrayAtFromList<T>(result->data, list...);
 	// Return result

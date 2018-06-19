@@ -8,19 +8,11 @@
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wterminate"
 
-// Normal `new` operator
-void * operator new (size_t size) noexcept;
-// Array `new` operator
-void * operator new [] (size_t size) noexcept;
-// Placement `new` operator
-inline void * operator new (size_t, void * ptr) noexcept {return ptr;}
+// Placement `new` operator for nx (takes an additional nothing)
+inline void * operator new (size_t, void * ptr, nx::Nothing) noexcept {return ptr;}
 
-// Normal `delete` operator
-void operator delete (void * obj) noexcept;
-// Array `delete` operator
-void operator delete [] (void * obj) noexcept;
-// Placement `delete` operator - Only called when placement `new` fails
-inline void operator delete (void *, void *) noexcept {}
+// Placement `delete` operator for nx (takes an additional nothing) - Only called when placement `new` fails
+inline void operator delete (void *, void *, nx::Nothing) noexcept {}
 
 
 // Namespace "nx::type"
@@ -28,7 +20,7 @@ namespace nx { namespace type {
 
 // Check for noexcept constructor with the given types
 template<typename T, typename ... TS> constexpr bool isCreateNoexcept()
-	{return noexcept(new (nullptr) T(param<TS>() ...));}
+	{return noexcept(new (nullptr, nothing) T(param<TS>() ...));}
 // Check for noexcept destructor
 template<typename T> constexpr bool isDestroyNoexcept()
 	{return noexcept(param<T &>().~T());}
@@ -82,13 +74,13 @@ template<typename T, typename... TS> inline T * create(TS && ... args) noexcept(
 // Create a single opject in place (wraps a placement new expression)
 template<typename T, typename... TS> inline T * createAt(T * ptr, TS && ... args) noexcept(isCreateNoexcept<T, TS ...>())
 {
-	return new (static_cast<void *>(ptr)) T(static_cast<TS &&>(args)...);
+	return new (static_cast<void *>(ptr), nothing) T(static_cast<TS &&>(args)...);
 }
 
 // Create a single object with a custom size
 template<typename T, typename... TS> inline T * createWithSize(size_t size, TS && ... args) noexcept(isCreateNoexcept<T, TS ...>())
 {
-	return new (alloc<void*>(size)) T(static_cast<TS &&>(args)...);
+	return new (alloc<void*>(size), nothing) T(static_cast<TS &&>(args)...);
 }
 
 // Create an array of objects (wraps a new array expression)
@@ -106,7 +98,7 @@ template<typename T> inline T * createArrayAt(T * ptr, size_t n) noexcept(isCrea
 	if (isCreateNoexcept<T>() || !exceptions)
 	{
 		for (size_t i = 0; i < n; ++ i)
-			new (ptr + i) T;
+			new (ptr + i, nothing) T;
 		return ptr;
 	}
 	else
@@ -115,7 +107,7 @@ template<typename T> inline T * createArrayAt(T * ptr, size_t n) noexcept(isCrea
 		__nx_try
 		{
 			for (; i < n; ++ i)
-				new (ptr + i) T;
+				new (ptr + i, nothing) T;
 		}
 		__nx_catch (...)
 		{
@@ -143,7 +135,7 @@ template<typename T, typename... TS> inline T * createArrayAtByCopy(T * ptr, con
 	if (isCreateNoexcept<T, T &>() || !exceptions)
 	{
 		for (size_t i = 0; i < n; ++ i)
-			new (ptr + i) T(array[i]);
+			new (ptr + i, nothing) T(array[i]);
 		return ptr;	
 	}
 	else
@@ -152,7 +144,7 @@ template<typename T, typename... TS> inline T * createArrayAtByCopy(T * ptr, con
 		__nx_try
 		{
 			for (; i < n; ++ i)
-				new (ptr + i) T(array[i]);
+				new (ptr + i, nothing) T(array[i]);
 		}
 		__nx_catch (...)
 		{
@@ -180,7 +172,7 @@ template<typename T, typename... TS> inline T * createArrayAtByMove(T * ptr, T *
 	if (isCreateNoexcept<T, T &&>() || !exceptions)
 	{
 		for (size_t i = 0; i < n; ++ i)
-			new (ptr + i) T(static_cast<T &&>(array[i]));		
+			new (ptr + i, nothing) T(static_cast<T &&>(array[i]));		
 		return ptr;	
 	}
 	else
