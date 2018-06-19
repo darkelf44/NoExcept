@@ -90,7 +90,7 @@ inline uint64_t mutateSeed(uint64_t & seed) noexcept
 template<typename R> Array<uint64_t> * createRandomArray(R & random, size_t length) noexcept
 {
 	// Create array
-	auto result = new Array<uint64_t>(length);
+	auto result = Array<uint64_t>::create(length);
 	
 	// Fill array with random data
 	if (result)

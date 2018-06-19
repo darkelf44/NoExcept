@@ -3,123 +3,96 @@
 
 // Include "nx" library
 #include <nx-util.hh>
-
-// int suffix, for narrowing conversions
-constexpr int operator "" _i (unsigned long long i)
-	{return static_cast<int>(i);}
-
-template<typename T> class TestData
-{
-	static T random[];
-	static T select[];
-};
-
-// Random data set
-template<> int TestData<int>::random[] = {
-	-545300232, 1417913656, 341412532, 1533270110, -249392204, -1962300738, 193878770, -1016769243,
-	-982441607, 1915417778, 167073993, 1212070828, -1316408840, 406944549, 923954193, 98145105,
-	620088011, 313620423, -1964568121, 1609187590, 1637611819, -1284514332, 1070369006, -517173077,
-	1507022977, -695059478, -1673547419, -802516921, 423550275, 1322904686, -1133035350, 599027874
-};
-
-// Hand picked data set
-template<> int TestData<int>::select[] = {
-	0, 1, 2, 3, 4, 7, 8, 15,
-	16, 32, 128, 256, 512, 1024, 2048, 4096,
-	0x10000_i, 0x100000_i, 0x1000000_i, 0x10000000_i, 0x01010101_i, 0x10101010_i, 0x0A0B0C0D_i, 0xA0B0C0D0_i,
-	0xFFFFFFFF_i, 0xFFFFFFF0_i, 0xFFFFFF00_i, 0xFFFFF000_i, 0xFFFF0000_i, 0xFFF00000_i, 0xFF000000_i, 0xF0000000_i
-};
+#include <nx-rng.hh>
 
 void TestRange(nx::Testing & test)
 {
-	test.runCase( "Loops" , [] (bool)
+	test.runCase( "Range<int>" , [] (bool)
 		{
-			// Range<int>
-			{
-				int n;
-				int j;
+			int n;
+			int j;
 
-				j = 0;
-				for (int i: nx::range(10))
-					expectEqual(j ++, i);
-				expectEqual(10, j);
+			j = 0;
+			for (int i: nx::range(10))
+				expectEqual(j ++, i);
+			expectEqual(10, j);
 
-				j = 10;
-				for (int i: nx::range(10, 0, -1))
-					expectEqual(j --, i);
-				expectEqual(0, j);
-				
-				n = 0;
-				j = 0;
-				for (int i: nx::range(0, 10, 3))
-				{
-					expectEqual(j, i);
-					++ n;
-					j += 3;
-				}
-				expectEqual(4, n);
-				expectEqual(12, j);
-				
-				n = 0;
-				j = 10;
-				for (int i: nx::range(10, 0, -3))
-				{
-					expectEqual(j, i);
-					++ n;
-					j -= 3;
-				}
-				expectEqual(4, n);
-				expectEqual(-2, j);
-				
-			}
+			j = 10;
+			for (int i: nx::range(10, 0, -1))
+				expectEqual(j --, i);
+			expectEqual(0, j);
 			
-			// Range<double>
+			n = 0;
+			j = 0;
+			for (int i: nx::range(0, 10, 3))
 			{
-				int n, j;
-				double g;
-				
-				j = 0;
-				for (double f: nx::range(10.0))
-				{
-					expectEqual(double(j++), f);
-				}
-				expectEqual(10, j);
-				
-				j = 10;
-				for (double f: nx::range(10.0, 0.0, -1.0))
-					expectEqual(double(j--), f);
-				expectEqual(0, j);
-				
-				n = 0;
-				g = 0.0;
-				for (double f: nx::range(0.0, 10.0, 3.0/7.0))
-				{
-					expectEqual(g, f);
-					++ n;
-					g += 3.0/7.0;
-				}
-				expectEqual(24, n);
-				
-				n = 0;
-				g = 10.0;
-				for (double f: nx::range(10.0, 0.0, -3.0/7.0))
-				{
-					expectEqual(g, f);
-					++ n;
-					g -= 3.0/7.0;
-				}
-				expectEqual(24, n);
-			}			
+				expectEqual(j, i);
+				++ n;
+				j += 3;
+			}
+			expectEqual(4, n);
+			expectEqual(12, j);
+			
+			n = 0;
+			j = 10;
+			for (int i: nx::range(10, 0, -3))
+			{
+				expectEqual(j, i);
+				++ n;
+				j -= 3;
+			}
+			expectEqual(4, n);
+			expectEqual(-2, j);
+			
 		}
+	);
+	
+	test.runCase( "Range<double>" , [] (bool)
+		{
+			int n, j;
+			double g;
+			
+			j = 0;
+			for (double f: nx::range(10.0))
+			{
+				expectEqual(double(j++), f);
+			}
+			expectEqual(10, j);
+			
+			j = 10;
+			for (double f: nx::range(10.0, 0.0, -1.0))
+				expectEqual(double(j--), f);
+			expectEqual(0, j);
+			
+			n = 0;
+			g = 0.0;
+			for (double f: nx::range(0.0, 10.0, 3.0/7.0))
+			{
+				expectEqual(g, f);
+				++ n;
+				g += 3.0/7.0;
+			}
+			expectEqual(24, n);
+			
+			n = 0;
+			g = 10.0;
+			for (double f: nx::range(10.0, 0.0, -3.0/7.0))
+			{
+				expectEqual(g, f);
+				++ n;
+				g -= 3.0/7.0;
+			}
+			expectEqual(24, n);
+		}			
 	);
 }
 
 
-template<typename T> void TestList(nx::Testing & test)
+void TestList(nx::Testing & test)
 {
 	test.runCase( "Sanity" , [] (bool)	// List sanity test - Make sure nothing is broken from the start
 		{
-			nx::List<T> list;
+			nx::List<uint64_t> list;
 			expectEqual(0, list.size());
 			expectEqual(0, list.capacity());
 			expectEqual(0, list.end() - list.begin());
@@ -134,48 +107,71 @@ template<typename T> void TestList(nx::Testing & test)
 	
 	test.runCase( "Append & Extend" , [] (bool)
 		{
-			T t;
+			nx::rng::Random r(2018);
+			auto list = nx::rng::makeRandomArray(r, 16);
 			
 			// Append T &&
-			nx::List<T> list1;			
-			for (size_t i = 1; i <= 16; ++ i)
+			nx::List<uint64_t> list1;
+			for (size_t i : nx::range(16))
 			{
-				list1.append(T());
-				expectEqual(i, list1.size());
+				list1.append(uint64_t(list[i]));
+				expectEqual(i + 1, list1.size());
 			}
+			
+			// Check elements
+			for (size_t i : nx::range(16))
+				expectEqual(list[i], list1[i]);
 			
 			// Append const T &
-			nx::List<T> list2;			
-			for (size_t i = 1; i <= 16; ++ i)
+			nx::List<uint64_t> list2;			
+			for (size_t i : nx::range(16))
 			{
-				list2.append(t);
-				expectEqual(i, list2.size());
+				list2.append(list[i]);
+				expectEqual(i + 1, list2.size());
 			}
+			
+			// Check elements
+			for (size_t i : nx::range(16))
+				expectEqual(list[i], list1[i]);
 			
 			// Extend T &&
-			nx::List<T> list3;
-			for (size_t i = 1; i <= 16; ++ i)
+			nx::List<uint64_t> list3;
+			for (size_t i : nx::range(16))
 			{
-				list3.extend(nx::List<T>(list1));
-				expectEqual(i * list1.size(), list3.size());
+				list3.extend(nx::List<uint64_t>(list1));
+				expectEqual((i + 1) * list1.size(), list3.size());
 			}
 			
+			// Check elements
+			for (size_t i : nx::range(16))
+				for (size_t j : nx::range(16))
+					expectEqual(list[j], list3[i*16 + j]);
+			
 			// Extend const T &
-			nx::List<T> list4;
-			for (size_t i = 1; i <= 16; ++ i)
+			nx::List<uint64_t> list4;
+			for (size_t i : nx::range(16))
 			{
 				list4.extend(list1);
-				expectEqual(i * list1.size(), list4.size());
+				expectEqual((i + 1) * list1.size(), list4.size());
 			}
+			
+			// Check elements
+			for (size_t i : nx::range(16))
+				for (size_t j : nx::range(16))
+					expectEqual(list[j], list4[i*16 + j]);
 		}
 	);
 	
 }
 
+void TestSession(nx::Testing & test)
+{
+	test.runGroup("Range", TestRange);
+	test.runGroup("List", TestList);
+//	test.runGroup("", Test);
+}
+
 int main()
 {
-	nx::Testing::get().runGroup("Range", TestRange);
-	nx::Testing::get().runGroup("List", TestList<int>);
-	
-	return 0;
+	return nx::Testing::get().runSession("NX Util", TestSession);
 }
