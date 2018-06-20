@@ -18,18 +18,113 @@ inline void operator delete (void *, void *, nx::Nothing) noexcept {}
 // Namespace "nx::type"
 namespace nx { namespace type {
 
-// Check for noexcept constructor with the given types
-template<typename T, typename ... TS> constexpr bool isCreateNoexcept()
-	{return noexcept(new (nullptr, nothing) T(param<TS>() ...));}
-// Check for noexcept destructor
-template<typename T> constexpr bool isDestroyNoexcept()
+// Namespace "nx::type::proto" - Naked C++ meta functions, without wrappers
+namespace proto {
+
+// [META FUNCTION] Id - Identity function, returns the given type. Useful for preventing type deduction
+template<typename T> struct Id { using Result = T; };
+
+// [META FUNCTION] Seq - Sequence function, returns the last type. Useful for SFINAE along with decltype
+template<typename ... TS> struct Seq;
+template<typename T> struct Seq<T> { using Result = T; };
+template<typename T, typename ... TS> struct Seq<T, TS ...> { using Result = typename Seq<TS ...>::Result; };
+
+// [META FUNCTION] EnableIf - Enables template function, if the condition is true
+template<bool b, typename T> struct EnableIf {};
+template<typename T> struct EnableIf<true, T> { using Result = T; };
+
+// [META FUNCTION] DisableIf - Enables template function, if the condition is false
+template<bool b, typename T> struct DisableIf {};
+template<typename T> struct DisableIf<false, T> { using Result = T; };
+
+// Close namespace "nx::type::proto"
+}
+
+template<typename T> using Id = typename proto::Id<T>::Result;
+template<typename ... TS> using Seq = typename proto::Seq<TS ...>::Result;
+
+template<bool b, typename T> using EnableIf = typename proto::EnableIf<b, T>::Result;
+template<bool b, typename T> using DisableIf = typename proto::DisableIf<b, T>::Result;
+	
+// Namespace "nx::type::impl"
+namespace impl {
+
+// Tests if the type has a specific constructor
+template<typename ... TS> struct HasCreate
+{
+	template<typename T> static constexpr bool hasCreate(const T *, void *) noexcept
+		{return false;}
+	template<typename T> static constexpr bool hasCreate(T *, Seq<decltype(new (nullptr, nothing) T(param<TS>() ...)), void> *) noexcept
+		{return true;}
+};
+
+// Tests if the type has a destructor
+template<typename T> constexpr bool hasDestroy(const T *, void *) noexcept
+	{return false;}
+template<typename T> constexpr bool hasDestroy(T *, Seq<decltype(param<T &>().~T()), void> *) noexcept
+	{return true;}
+
+// Tests if the type has a copy assignment
+template<typename T> constexpr bool hasCopy(const T *, void *) noexcept
+	{return false;}
+template<typename T> constexpr bool hasCopy(T *, Seq<decltype(param<T &>() = param<T &>()), void> *) noexcept
+	{return true;}
+
+// Tests if the type has a move assignment
+template<typename T> constexpr bool hasMove(const T *, void *) noexcept
+	{return false;}
+template<typename T> constexpr bool hasMove(T *, Seq<decltype(param<T &>() = param<T &&>()), void> *) noexcept
+	{return true;}
+
+// Tests if the type has specific noexcept constructor
+template<typename ... TS> struct HasNoexceptCreate
+{
+	template<typename T> static constexpr bool hasNoexceptCreate(const T *, void *) noexcept
+		{return false;}
+	template<typename T> static constexpr bool hasNoexceptCreate(T *, Seq<decltype(new (nullptr, nothing) T(param<TS>() ...)), void> *) noexcept
+		{return noexcept(new (nullptr, nothing) T(param<TS>() ...));}
+};
+
+// Tests if the type has a noexcept destructor
+template<typename T> constexpr bool hasNoexceptDestroy(const T *, void *) noexcept
+	{return false;}
+template<typename T> constexpr bool hasNoexceptDestroy(T *, Seq<decltype(param<T &>().~T()), void> *) noexcept
 	{return noexcept(param<T &>().~T());}
-// Check for noexcept copy
-template<typename T> constexpr bool isCopyNoexcept()
+
+// Tests if the type has a noexcept copy assignment
+template<typename T> constexpr bool hasNoexceptCopy(const T *, void *) noexcept
+	{return false;}
+template<typename T> constexpr bool hasNoexceptCopy(T *, Seq<decltype(param<T &>() = param<T &>()), void> *) noexcept
 	{return noexcept(param<T &>() = param<T &>());}
-// Check for noexcept move
-template<typename T> constexpr bool isMoveNoexcept()
+
+// Tests if the type has a noexcept move assignment
+template<typename T> constexpr bool hasNoexceptMove(const T *, void *) noexcept
+	{return false;}
+template<typename T> constexpr bool hasNoexceptMove(T *, Seq<decltype(param<T &>() = param<T &&>()), void> *) noexcept
 	{return noexcept(param<T &>() = param<T &&>());}
+	
+// Close namespace "nx::type::impl"
+}
+
+// Check for default functions
+template<typename T, typename ... TS> constexpr bool hasCreate()
+	{return impl::HasCreate<TS ...>::hasCreate(null<T>(), nullptr);}
+template<typename T> constexpr bool hasDestroy()
+	{return impl::hasDestroy(null<T>(), nullptr);}
+template<typename T> constexpr bool hasCopy()
+	{return impl::hasCopy(null<T>(), nullptr);}
+template<typename T> constexpr bool hasMove()
+	{return impl::hasMove(null<T>(), nullptr);}
+
+// Check for noexcept default functions
+template<typename T, typename ... TS> constexpr bool hasNoexceptCreate()
+	{return impl::HasNoexceptCreate<TS ...>::hasNoexceptCreate(null<T>(), nullptr);}
+template<typename T> constexpr bool hasNoexceptDestroy()
+	{return impl::hasNoexceptDestroy(null<T>(), nullptr);}
+template<typename T> constexpr bool hasNoexceptCopy()
+	{return impl::hasNoexceptCopy(null<T>(), nullptr);}
+template<typename T> constexpr bool hasNoexceptMove()
+	{return impl::hasNoexceptMove(null<T>(), nullptr);}
 
 // Allocate memory for a type, without constructing them
 template<typename T> inline T * alloc(size_t size = sizeof(T)) noexcept
@@ -72,13 +167,13 @@ template<typename T, typename... TS> inline T * create(TS && ... args) noexcept(
 }
 
 // Create a single opject in place (wraps a placement new expression)
-template<typename T, typename... TS> inline T * createAt(T * ptr, TS && ... args) noexcept(isCreateNoexcept<T, TS ...>())
+template<typename T, typename... TS> inline T * createAt(T * ptr, TS && ... args) noexcept(hasNoexceptCreate<T, TS ...>())
 {
 	return new (static_cast<void *>(ptr), nothing) T(static_cast<TS &&>(args)...);
 }
 
 // Create a single object with a custom size
-template<typename T, typename... TS> inline T * createWithSize(size_t size, TS && ... args) noexcept(isCreateNoexcept<T, TS ...>())
+template<typename T, typename... TS> inline T * createWithSize(size_t size, TS && ... args) noexcept(hasNoexceptCreate<T, TS ...>())
 {
 	return new (alloc<void*>(size), nothing) T(static_cast<TS &&>(args)...);
 }
@@ -90,12 +185,12 @@ template<typename T> inline T * createArray(size_t n) noexcept(noexcept(new T[n]
 }
 
 // Create an array of objects in place (with exception handling)
-template<typename T> inline T * createArrayAt(T * ptr, size_t n) noexcept(isCreateNoexcept<T>() || !exceptions)
+template<typename T> inline T * createArrayAt(T * ptr, size_t n) noexcept(hasNoexceptCreate<T>() || !exceptions)
 {
 	if (n == 0)
 		return ptr;
 	
-	if (isCreateNoexcept<T>() || !exceptions)
+	if (hasNoexceptCreate<T>() || !exceptions)
 	{
 		for (size_t i = 0; i < n; ++ i)
 			new (ptr + i, nothing) T;
@@ -127,12 +222,12 @@ template<typename T> inline T * createArrayAt(T * ptr, size_t n) noexcept(isCrea
 }
 
 // Create an array of objects in place, by copying from an other array
-template<typename T, typename... TS> inline T * createArrayAtByCopy(T * ptr, const T * array, size_t n) noexcept(isCreateNoexcept<T, T &>() || !exceptions)
+template<typename T> inline T * createArrayAtByCopy(T * ptr, const T * array, size_t n) noexcept(hasNoexceptCreate<T, T &>() || !exceptions)
 {
 	if (n == 0)
 		return ptr;
 	
-	if (isCreateNoexcept<T, T &>() || !exceptions)
+	if (hasNoexceptCreate<T, T &>() || !exceptions)
 	{
 		for (size_t i = 0; i < n; ++ i)
 			new (ptr + i, nothing) T(array[i]);
@@ -163,22 +258,21 @@ template<typename T, typename... TS> inline T * createArrayAtByCopy(T * ptr, con
 	}
 }
 
-// Create an array of objects in place, by moving from an other array (if it can be safely moved, otherwise copy)
-template<typename T, typename... TS> inline T * createArrayAtByMove(T * ptr, T * array, size_t n) noexcept(isCreateNoexcept<T, T>() || isCreateNoexcept<T, T &>() || !exceptions)
+// Create an array of objects in place, by moving from an other array (if it can be safely moved)
+template<typename T> inline EnableIf<hasNoexceptCreate<T, T>(), T *> createArrayAtByMove(T * ptr, T * array, size_t n) noexcept
 {
 	if (n == 0)
 		return ptr;
 	
-	if (isCreateNoexcept<T, T &&>() || !exceptions)
-	{
-		for (size_t i = 0; i < n; ++ i)
-			new (ptr + i, nothing) T(static_cast<T &&>(array[i]));		
-		return ptr;	
-	}
-	else
-	{
-		return createArrayAtByCopy(ptr, array, n);
-	}
+	for (size_t i = 0; i < n; ++ i)
+		new (ptr + i, nothing) T(static_cast<T &&>(array[i]));		
+	return ptr;
+}
+
+// Create an array of objects in place, by copying from an other array (if it can't be safely moved)
+template<typename T> inline EnableIf<!hasNoexceptCreate<T, T>(), T *> createArrayAtByMove(T * ptr, T * array, size_t n) noexcept(hasNoexceptCreate<T, T &>() || !exceptions)
+{
+	return createArrayAtByCopy(ptr, array, n);
 }
 
 // Create an array of objects in place, and initialize them from the list
@@ -198,7 +292,7 @@ template<typename T> inline void destroy(T * ptr) noexcept(noexcept(delete ptr))
 }
 
 // Destroy a single object in place (wraps a destructor call)
-template<typename T> inline void destroyAt(T * ptr) noexcept(isDestroyNoexcept<T>())
+template<typename T> inline void destroyAt(T * ptr) noexcept(hasNoexceptDestroy<T>())
 {
 	ptr->~T();
 }
@@ -210,12 +304,12 @@ template<typename T> inline void destroyArray(T * ptr, size_t n) noexcept(noexce
 }
 
 // Destroy an array of objects in place
-template<typename T> inline void destroyArrayAt(T * ptr, size_t n) noexcept(isDestroyNoexcept<T>())
+template<typename T> inline void destroyArrayAt(T * ptr, size_t n) noexcept(hasNoexceptDestroy<T>())
 {
 	if (n == 0)
 		return;
 	
-	if (isDestroyNoexcept<T>() || !exceptions)
+	if (hasNoexceptDestroy<T>() || !exceptions)
 	{
 		for (size_t i = n-1; i < n; -- i)
 			(ptr + i)->~T();

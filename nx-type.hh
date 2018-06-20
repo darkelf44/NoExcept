@@ -43,14 +43,6 @@ namespace type {
 // Namespace "nx::type::proto" - Naked C++ meta functions, without wrappers
 namespace proto {
 
-// [META FUNCTION] Id - Identity function, returns the given type. Useful for preventing type deduction
-template<typename T> struct Id { using Result = T; };
-
-// [META FUNCTION] EnableIf - Enables template function, if the condition is true
-template<bool b, typename T> struct EnableIf {};
-template<typename T> struct EnableIf<true, T> { using Result = T; };
-
-
 // [META FUNCTION] IsConstant - True, if the type is const qualified
 template<typename T> struct IsConstant { static constexpr bool result = false; };
 template<typename T> struct IsConstant<const T> { static constexpr bool result = true; };
@@ -126,9 +118,6 @@ template<typename T> struct Strip { using Result = typename RemoveQualifiers<typ
 // [FUNCTION] typeid - returns a unique integer id for a type
 template<typename T> inline uintptr_t typeid()
 	{ static void * id; return reinterpret_cast<uintptr_t>(&id); }
-
-template<typename T> using Id = typename proto::Id<T>::Result;
-template<bool b, typename T> using EnableIf = typename proto::EnableIf<b, T>::Result;
 
 template<typename T> inline constexpr bool isConstant()
 	{ return proto::IsConstant<T>::result; }
