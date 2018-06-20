@@ -14,11 +14,11 @@ template<typename T> struct UniquePtr
 	using Type = T;
 	
 	// Constructors & destructors
-	UniquePtr()
+	UniquePtr() noexcept
 		: pointer(nullptr) {}
-	explicit UniquePtr(T * ptr)
+	explicit UniquePtr(T * ptr) noexcept
 		: pointer(ptr) {}
-	~UniquePtr()
+	~UniquePtr() noexcept
 		{delete pointer;}
 	
 	// Copy operators deleted
@@ -26,39 +26,39 @@ template<typename T> struct UniquePtr
 	UniquePtr<T> & operator = (const UniquePtr<T> &) = delete;
 	
 	// Move operators
-	UniquePtr(UniquePtr<T> && ptr)
+	UniquePtr(UniquePtr<T> && ptr) noexcept
 		: pointer(ptr.release()) {}
-	UniquePtr<T> & operator = (UniquePtr<T> && ptr)
+	UniquePtr<T> & operator = (UniquePtr<T> && ptr) noexcept
 		{return reset(ptr.release());}
 
 	// Template move operators
-	template<typename U> UniquePtr(UniquePtr<U> && ptr)
+	template<typename U> UniquePtr(UniquePtr<U> && ptr) noexcept
 		: pointer(ptr.release()) {}
-	template<typename U> UniquePtr<T> & operator = (UniquePtr<U> && ptr)
+	template<typename U> UniquePtr<T> & operator = (UniquePtr<U> && ptr) noexcept
 		{return reset(ptr.release());}
 	
 	// Operators & methods
-	T * release()
+	T * release() noexcept
 		{T * ptr = pointer; pointer = nullptr; return ptr;}
 	UniquePtr<T> & reset(T * ptr = nullptr)
 		{delete pointer; pointer = ptr; return * this;}
-	T * operator -> () const
+	T * operator -> () const noexcept
 		{return pointer;}
-	T & operator * () const
+	T & operator * () const noexcept
 		{return * pointer;}
-	T * get() const
+	T * get() const noexcept
 		{return pointer;}
-	T & access() const
+	T & access() const noexcept
 		{return * pointer;}
 	
 	// Support postfix operators of underlying type [], (), (except if the underlying type is a pointer)
-	template<typename I> auto index(I && i) -> EnableIf<!nx::type::isPointer<T>(), decltype(param<T>()[param<I &&>()])> const
+	template<typename I> auto index(I && i) const noexcept(noexcept(param<T>()[param<I &&>()])) -> EnableIf<!nx::type::isPointer<T>(), decltype(param<T>()[param<I &&>()])>
 		{return (*pointer)[static_cast<I &&>(i)];}
-	template<typename... TS> auto call(TS && ... args) -> EnableIf<!nx::type::isPointer<T>(), decltype(param<T>()(param<TS &&>()...))> const
+	template<typename... TS> auto call(TS && ... args) const noexcept(noexcept(param<T>()(param<TS &&>()...))) -> EnableIf<!nx::type::isPointer<T>(), decltype(param<T>()(param<TS &&>()...))>
 		{return (*pointer)(args...);}
-	template<typename I> auto operator [] (I i) -> EnableIf<!nx::type::isPointer<T>(), decltype(param<T>()[param<I &&>()])> const
+	template<typename I> auto operator [] (I i) const noexcept(noexcept(param<T>()[param<I &&>()])) -> EnableIf<!nx::type::isPointer<T>(), decltype(param<T>()[param<I &&>()])>
 		{return (*pointer)[static_cast<I &&>(i)];}
-	template<typename... TS> auto operator () (TS && ... args) -> EnableIf<!nx::type::isPointer<T>(), decltype(param<T>()(param<TS &&>()...))> const
+	template<typename... TS> auto operator () (TS && ... args) const noexcept(noexcept(param<T>()(param<TS &&>()...))) -> EnableIf<!nx::type::isPointer<T>(), decltype(param<T>()(param<TS &&>()...))>
 		{return (*pointer)(static_cast<TS &&>(args)...);}
 	
 	// Raw pointer
@@ -72,11 +72,11 @@ template<typename T> struct UniquePtr<T[]>
 	using Type = T;
 	
 	// Constructors & Destructors
-	UniquePtr()
+	UniquePtr() noexcept
 		: pointer(nullptr) {}
-	explicit UniquePtr(T * ptr)
+	explicit UniquePtr(T * ptr) noexcept
 		: pointer(ptr) {}
-	~UniquePtr()
+	~UniquePtr() noexcept
 		{delete [] pointer;}
 	
 	// Copy operators deleted
@@ -84,23 +84,23 @@ template<typename T> struct UniquePtr<T[]>
 	UniquePtr<T[]> & operator = (const UniquePtr<T[]> &) = delete;
 
 	// Move operators
-	UniquePtr(UniquePtr<T[]> && ptr)
+	UniquePtr(UniquePtr<T[]> && ptr) noexcept
 		: pointer(ptr.release()) {}
-	UniquePtr<T> & operator = (UniquePtr<T[]> && ptr)
+	UniquePtr<T> & operator = (UniquePtr<T[]> && ptr) noexcept
 		{return this->reset(ptr.release());}
 
 	// Template move operators
-	template<typename U> UniquePtr(UniquePtr<U> && ptr)
+	template<typename U> UniquePtr(UniquePtr<U> && ptr) noexcept
 		: pointer(ptr.release()) {}
-	template<typename U> UniquePtr<T[]> & operator = (UniquePtr<U> && ptr)
+	template<typename U> UniquePtr<T[]> & operator = (UniquePtr<U> && ptr) noexcept
 		{return this->reset(ptr.release());}
 
 	// Operators & methods
-	T * release()
+	T * release() noexcept
 		{T * ptr = pointer; pointer = nullptr; return ptr;}
-	UniquePtr<T[]> & reset(T * ptr = nullptr)
+	UniquePtr<T[]> & reset(T * ptr = nullptr) noexcept
 		{delete [] pointer; pointer = ptr; return * this;}
-	T & operator [] (size_t i) const
+	T & operator [] (size_t i) const noexcept
 		{return pointer[i];}
 	
 	// Raw pointer

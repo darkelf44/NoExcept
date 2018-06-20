@@ -87,7 +87,6 @@ void TestRange(nx::Testing & test)
 	);
 }
 
-
 void TestList(nx::Testing & test)
 {
 	test.runCase( "Sanity" , [] (bool)	// List sanity test - Make sure nothing is broken from the start
@@ -98,10 +97,53 @@ void TestList(nx::Testing & test)
 			expectEqual(0, list.end() - list.begin());
 		}
 	);
-	
+
 	test.runCase( "Resize & Reserve" , [] (bool)
 		{
+			// Test int
+			{
+				nx::List<int> list;
+				
+				list.reserve(16);
+				expectEqual(16, list.capacity());
+
+				list.resize(16);
+				expectEqual(16, list.size());
+			}
+
+			// Test double
+			{
+				nx::List<double> list;
+				
+				list.reserve(16);
+				expectEqual(16, list.capacity());
+
+				list.resize(16);
+				expectEqual(16, list.size());
+			}
 			
+			// Test List
+			{
+				nx::List<nx::List<int>> list;
+				
+				list.reserve(16);
+				expectEqual(16, list.capacity());
+
+				list.resize(16);
+				expectEqual(16, list.size());
+			}
+			
+			// Test UniquePtr
+			{
+				nx::List<nx::UniquePtr<int>> list;
+				
+				list.reserve(16);
+				expectEqual(16, list.capacity());
+
+				list.resize(16);
+				expectEqual(16, list.size());
+			}
+
 		}
 	);
 	
@@ -163,6 +205,28 @@ void TestList(nx::Testing & test)
 	);
 	
 }
+
+void TestTuple(nx::Testing & test)
+{
+	test.runCase( "Pair" , [] (bool)
+		{
+			
+		}
+	);
+	
+	test.runCase( "Trio" , [] (bool)
+		{
+			
+		}
+	);
+	
+	test.runCase( "Quad" , [] (bool)
+		{
+			
+		}
+	);
+}
+
 
 void TestSession(nx::Testing & test)
 {
