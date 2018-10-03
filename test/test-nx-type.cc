@@ -35,24 +35,55 @@ void TestArray(nx::Testing & test)
 		}
 	);
 
-	test.runCase("Syntax & utility", [] (bool)		// Testing other stuff
+	test.runCase("Syntax & utility", [] (bool)
 		{
 			// Creating array from list
-			auto array = nx::makeArrayFrom<int>(1, 1, 2, 3, 5, 8, 13, 21, 35, 56);
+			auto array = nx::makeArrayFrom<int>(10, 20, 30, 40, 50, 60, 70, 80, 90, 100);
 
 			// Iterating over arrays
-			size_t i = 0;
-			for (auto x : *array)
-				expectEqual(array[i++], x);
+			{
+				size_t i = 0;
+				for (auto x : *array)
+					expectEqual(array[i ++], x);
+				expectEqual(array->length, i);
+			}
 			
 			// Copying arrays
-
+			{
+				auto other = nx::makeArray<int>(array->length);
+				nx::Array<int>::copy(*array, *other, array->length);
+				for (size_t i = 0; i < other->length; ++ i)
+					expectEqual(array[i], other[i]);
+			}
+				
+			// Filling arrays
+			{
+				auto other = nx::makeArray<int>(1000);
+				nx::Array<int>::fill(*other, 42);
+				for (size_t i = 0; i < other->length; ++ i)
+					expectEqual(42, other[i]);
+			}
 			
 		}
 	);
 }
 
+void TestTuple(nx::Testing & test)
+{
+	test.runCase("Pair", [] (bool) 	// Very basic sanity test (Ok...)
+		{
+			
+		}
+	);
+}
+
+void TestSession(nx::Testing & test)
+{
+	test.runGroup("Test Array", TestArray);
+	test.runGroup("Test Tuple", TestTuple);
+}
+
 int main()
 {
-	return nx::Testing::get().runGroup("Test Array<>", TestArray);
+	return nx::Testing::get().runSession("NX Type", TestSession);
 }

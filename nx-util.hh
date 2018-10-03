@@ -69,7 +69,7 @@ public:
 template<typename T> class Range
 {
 public:
-	// Legacy Iterator
+	// NX Iterator
 	class Iter
 	{
 	public:
@@ -77,8 +77,7 @@ public:
 		const bool forward = true;
 		
 		// Contructors
-		Iter()
-			{}
+		Iter() = default;
 		Iter(T value, T end, T step)
 			: forward(step > 0), _value(rvalue(value)), _end(rvalue(end)), _step(rvalue(step)) {}
 		
@@ -172,6 +171,16 @@ template<typename T> class List: public Object
 public:
 	// Element type
 	using Type = T;
+	
+	// Iterator type
+	class Iter
+	{
+	public:
+		
+	private:
+		T * current;
+		T * end;
+	};
 
 	// Constructors & destructors
 	List() noexcept
@@ -209,7 +218,10 @@ public:
 	void extend(List && list);
 	void extend(const List & list);
 	
-	// STL itertator methods
+	// NX iterator methods
+	//Iter iter();
+	
+	// STL iterator methods
 	inline T * begin() noexcept
 		{return items;}
 	inline const T * begin() const noexcept
@@ -276,8 +288,9 @@ public:
 	Dictionary() noexcept
 		{}
 	Dictionary(Dictionary && dict) noexcept
-		: config(dict.config), n(dict.n), m(dict.m), nodes(dict.nodes), table(dict.table) {dict.nodes = nullptr; dict.table = nullptr;}
-	Dictionary(const Dictionary & dict);
+		: n(dict.n), m(dict.m), nodes(dict.nodes), table(dict.table) {dict.nodes = nullptr; dict.table = nullptr;}
+	Dictionary(const Dictionary & dict)
+		: n(dict.n), m(dict.m), nodes(dict.nodes->clone()), table(dict.table->clone()) {}
 	~Dictionary() override
 		{delete nodes; delete table;}
 		
@@ -286,22 +299,28 @@ public:
 		{return n;}
 	size_t capacity() const noexcept
 		{return m;}
+		
+	// Getters
+	const V & get(const K & key, const V & def = V());
+	
+	// Methods
+	
+	// NX iterator methods
+	// Iter iter();
+	
+	// STL iterator methods
+	
+	// Copy & move
+	
+	// Operators
+	V & operator [] (const K & key);
+	const V & operator [] (const K & key) const;
 
 private:
 	// Node type
 	struct Node;
 	
-	// Configuration
-	struct
-	{
-		float growth_rate = 2.0;
-		float shrink_rate = 0.5;
-		float max_fill_rate = 0.75;
-		float min_fill_rate = 0.25;
-	}
-	config;
-	
-	// size and capacity
+	// Size and capacity
 	size_t n = 0;
 	size_t m = 0;
 	
@@ -471,7 +490,7 @@ private:
 //		Utility functions
 // ------------------------------------------------------------ //
 
-template<typename T> void swap(T & left, T & right) noexcept(nx::type::isCreateNoexcept<T, T>() && nx::type::isMoveNoexcept<T>())
+template<typename T> void swap(T & left, T & right) noexcept(nx::type::hasNoexceptCreate<T, T>() && nx::type::hasNoexceptMove<T>())
 {
 	T l = rvalue(left);
 	T r = rvalue(right);
@@ -666,9 +685,9 @@ template<typename K, typename V> struct Dictionary<K, V>::Node
 		{if (hash != 0) destroy();}
 	
 	// Create and destroy the entry
-	template<typename ... TS> void create(TS && ... args) noexcept(nx::type::isCreateNoexcept<Entry, TS ...>())
+	template<typename ... TS> void create(TS && ... args) noexcept(nx::type::hasNoexceptCreate<Entry, TS ...>())
 		{nx::type::createAt(& entry, forward<TS &&>(args) ...);}
-	void destroy() noexcept(nx::type::isDestroyNoexcept<Entry>())
+	void destroy() noexcept(nx::type::hasNoexceptDestroy<Entry>())
 		{nx::type::destroyAt(& entry);}
 		
 	// Copy and move isn't needed

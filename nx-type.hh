@@ -456,12 +456,12 @@ template<typename T> void Array<T>::copy(const Array<T> & src, size_t src_idx, A
 	if (& src != & dest || src_idx >= dest_idx || src_idx + len <= dest_idx)
 	{
 		for (size_t i = 0; i < len; ++ i)
-			dest[src_idx + i] = dest[dest_idx + i];
+			dest[src_idx + i] = src[dest_idx + i];
 	}
 	else
 	{
 		for (size_t i = len - 1; i < len; -- i)
-			dest[src_idx + i] = dest[dest_idx + i];
+			dest[src_idx + i] = src[dest_idx + i];
 	}
 }
 
