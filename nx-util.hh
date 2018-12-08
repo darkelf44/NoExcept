@@ -3,7 +3,7 @@
 
 // Local includes
 #include "nx-type.hh"
-//#include "nx-meta.hh"
+#include "nx-meta.hh"
 
 // Namespace "nx"
 namespace nx {
@@ -490,12 +490,74 @@ private:
 //		Utility functions
 // ------------------------------------------------------------ //
 
+template<typename T> T * addressof(T & obj) noexcept
+	{return reinterpret_cast<T*>(& const_cast<char&>(reinterpret_cast<const volatile char &>(obj)));}
+
+template<typename T> constexpr uintptr_t getaddress(T & obj) noexcept
+	{return & reinterpret_cast<const volatile char &>(obj) - reinterpret_cast<const volatile char *>(nullptr);}
+	
+template<typename T> constexpr T & useaddress(uintptr_t addr) noexcept
+	{return * (reinterpret_cast<const volatile char *>(nullptr) + addr);}
+	
 template<typename T> void swap(T & left, T & right) noexcept(nx::type::hasNoexceptCreate<T, T>() && nx::type::hasNoexceptMove<T>())
 {
 	T l = rvalue(left);
 	T r = rvalue(right);
 	left = rvalue(r);
 	right = rvalue(l);
+}
+
+
+// ------------------------------------------------------------ //
+//		Tuple Implementation
+// ------------------------------------------------------------ //
+
+template<typename X, typename Y> template<size_t I> meta::Select<I, X, Y> & Tuple<X, Y>::at()
+{
+	return useaddress<meta::Select<I, X, Y>>(meta::Select<I,
+		meta::UIntPtr<getaddress(this->first)>,
+		meta::UIntPtr<getaddress(this->second)>>::value);
+}
+
+template<typename X, typename Y> template<size_t I> const meta::Select<I, X, Y> & Tuple<X, Y>::at() const
+{
+	return useaddress<meta::Select<I, X, Y>>(meta::Select<I,
+		meta::UIntPtr<getaddress(this->first)>,
+		meta::UIntPtr<getaddress(this->second)>>::value);
+}
+
+template<typename X, typename Y, typename Z> template<size_t I> meta::Select<I, X, Y, Z> & Tuple<X, Y, Z>::at()
+{
+	return useaddress<meta::Select<I, X, Y, Z>>(meta::Select<I,
+		meta::UIntPtr<getaddress(this->first)>,
+		meta::UIntPtr<getaddress(this->second)>,
+		meta::UIntPtr<getaddress(this->third)>>::value);
+}
+
+template<typename X, typename Y, typename Z> template<size_t I> const meta::Select<I, X, Y, Z> & Tuple<X, Y, Z>::at() const
+{
+	return useaddress<meta::Select<I, X, Y, Z>>(meta::Select<I,
+		meta::UIntPtr<getaddress(this->first)>,
+		meta::UIntPtr<getaddress(this->second)>,
+		meta::UIntPtr<getaddress(this->third)>>::value);
+}
+
+template<typename X, typename Y, typename Z, typename W> template<size_t I> meta::Select<I, X, Y, Z, W> & Tuple<X, Y, Z, W>::at()
+{
+	return useaddress<meta::Select<I, X, Y, Z, W>>(meta::Select<I,
+		meta::UIntPtr<getaddress(this->first)>,
+		meta::UIntPtr<getaddress(this->second)>,
+		meta::UIntPtr<getaddress(this->third)>,
+		meta::UIntPtr<getaddress(this->fourth)>>::value);
+}
+
+template<typename X, typename Y, typename Z, typename W> template<size_t I> const meta::Select<I, X, Y, Z, W> & Tuple<X, Y, Z, W>::at() const
+{
+	return useaddress<meta::Select<I, X, Y, Z, W>>(meta::Select<I,
+		meta::UIntPtr<getaddress(this->first)>,
+		meta::UIntPtr<getaddress(this->second)>,
+		meta::UIntPtr<getaddress(this->third)>,
+		meta::UIntPtr<getaddress(this->fourth)>>::value);
 }
 
 // ------------------------------------------------------------ //

@@ -33,7 +33,6 @@ template<size_t i, typename T, typename ... TS> struct Select<i, T, TS ...> { us
 template<bool b, typename T, typename F> using If = typename proto::If<b, T, F>::Result;
 template<size_t i, typename ... TS> using Select = typename proto::Select<i, TS ...>::Result;
 
-
 // close namespace "nx::meta"
 }
 
@@ -42,6 +41,32 @@ namespace type {
 
 // Namespace "nx::type::proto" - Naked C++ meta functions, without wrappers
 namespace proto {
+
+// [META FUNCTION] Char - Construct character type of given size
+template<size_t N> struct Char;
+template<> struct Char<1> { using Result = char; };
+template<> struct Char<2> { using Result = char16_t; };
+template<> struct Char<4> { using Result = char32_t; };
+
+// [META FUNCTION] Int - Construct signed integer type of given size
+template<size_t N> struct Int;
+template<> struct Int<1> { using Result = int8_t; };
+template<> struct Int<2> { using Result = int16_t; };
+template<> struct Int<4> { using Result = int32_t; };
+template<> struct Int<8> { using Result = int64_t; };
+
+// [META FUNCTION] Int - Construct unsigned integer type of given size
+template<size_t N> struct UInt;
+template<> struct UInt<1> { using Result = uint8_t; };
+template<> struct UInt<2> { using Result = uint16_t; };
+template<> struct UInt<4> { using Result = uint32_t; };
+template<> struct UInt<8> { using Result = uint64_t; };
+
+// [META FUNCTION] Floating - Construct floating point type of given length
+template<size_t N> struct Float;
+template<> struct Float<sizeof(float)> { using Result = float; };
+template<> struct Float<sizeof(double)> { using Result = double; };
+
 
 // [META FUNCTION] IsConstant - True, if the type is const qualified
 template<typename T> struct IsConstant { static constexpr bool result = false; };
@@ -115,6 +140,12 @@ template<typename T> struct Strip { using Result = typename RemoveQualifiers<typ
 // Close namespace "nx::type::proto"
 }
 
+// Templated types
+template<size_t N> using Char = typename proto::Char<N>::Result;
+template<size_t N> using Int = typename proto::Int<N>::Result;
+template<size_t N> using UInt = typename proto::UInt<N>::Result;
+template<size_t N> using Float = typename proto::Float<N>::Result;
+
 // [FUNCTION] typeid - returns a unique integer id for a type
 template<typename T> inline uintptr_t typeid()
 	{ static void * id; return reinterpret_cast<uintptr_t>(&id); }
@@ -148,7 +179,6 @@ template<typename T> using RemoveRValueReference = typename proto::RemoveRValueR
 template<typename T> using RemoveAnyReference = typename proto::RemoveAnyReference<T>::Result;
 
 template<typename T> using Strip = typename RemoveQualifiers<typename RemoveAnyReference<T>::Result>::Result;
-
 
 // Close namespace "nx::type"	
 }
@@ -300,7 +330,7 @@ template<typename X, typename Y> struct Tuple<X, Y>
 	template<typename T1, typename T2> Tuple(T1 && t1, T2 && t2)
 		: first(forward<T1 &&>(t1)), second(forward<T2 &&>(t2)) {}
 		
-	// Methods: TODO: somehow implement this
+	// Methods - Implemented in nx-util.hh
 	template<size_t I> meta::Select<I, X, Y> & at();
 	template<size_t I> const meta::Select<I, X, Y> & at() const;
 	
@@ -335,7 +365,7 @@ template<typename X, typename Y, typename Z> struct Tuple<X, Y, Z>
 	template<typename T1, typename T2, typename T3> Tuple(T1 && t1, T2 && t2, T3 && t3)
 		: first(forward<T1 &&>(t1)), second(forward<T2 &&>(t2)), third(forward<T3 &&>(t3)) {}
 		
-	// Methods: TODO: somehow implement this
+	// Methods - Implemented in nx-util.hh
 	template<size_t I> meta::Select<I, X, Y, Z> & at();
 	template<size_t I> const meta::Select<I, X, Y, Z> & at() const;
 	
@@ -371,7 +401,7 @@ template<typename X, typename Y, typename Z, typename W> struct Tuple<X, Y, Z, W
 	template<typename T1, typename T2, typename T3, typename T4> Tuple(T1 && t1, T2 && t2, T3 && t3, T4 && t4)
 		: first(forward<T1 &&>(t1)), second(forward<T2 &&>(t2)), third(forward<T3 &&>(t3)), fourth(forward<T4 &&>(t4)) {}
 		
-	// Methods: TODO: somehow implement this
+	// Methods - Implemented in nx-util.hh
 	template<size_t I> meta::Select<I, X, Y, Z, W> & at();
 	template<size_t I> const meta::Select<I, X, Y, Z, W> & at() const;
 	
