@@ -328,7 +328,7 @@ template<typename X, typename Y> struct Tuple<X, Y>
 		: first(tuple.first), second(tuple.second) {}
 	
 	template<typename T1, typename T2> Tuple(T1 && t1, T2 && t2)
-		: first(forward<T1 &&>(t1)), second(forward<T2 &&>(t2)) {}
+		: first(forward<T1>(t1)), second(forward<T2>(t2)) {}
 		
 	// Methods - Implemented in nx-util.hh
 	template<size_t I> meta::Select<I, X, Y> & at();
@@ -363,7 +363,7 @@ template<typename X, typename Y, typename Z> struct Tuple<X, Y, Z>
 		: first(tuple.first), second(tuple.second), third(tuple.third) {}
 	
 	template<typename T1, typename T2, typename T3> Tuple(T1 && t1, T2 && t2, T3 && t3)
-		: first(forward<T1 &&>(t1)), second(forward<T2 &&>(t2)), third(forward<T3 &&>(t3)) {}
+		: first(forward<T1>(t1)), second(forward<T2>(t2)), third(forward<T3>(t3)) {}
 		
 	// Methods - Implemented in nx-util.hh
 	template<size_t I> meta::Select<I, X, Y, Z> & at();
@@ -399,7 +399,7 @@ template<typename X, typename Y, typename Z, typename W> struct Tuple<X, Y, Z, W
 		: first(tuple.first), second(tuple.second), third(tuple.third), fourth(tuple.fourth) {}
 	
 	template<typename T1, typename T2, typename T3, typename T4> Tuple(T1 && t1, T2 && t2, T3 && t3, T4 && t4)
-		: first(forward<T1 &&>(t1)), second(forward<T2 &&>(t2)), third(forward<T3 &&>(t3)), fourth(forward<T4 &&>(t4)) {}
+		: first(forward<T1>(t1)), second(forward<T2>(t2)), third(forward<T3>(t3)), fourth(forward<T4>(t4)) {}
 		
 	// Methods - Implemented in nx-util.hh
 	template<size_t I> meta::Select<I, X, Y, Z, W> & at();
@@ -414,6 +414,10 @@ template<typename X, typename Y, typename Z, typename W> struct Tuple<X, Y, Z, W
 	template<typename T1, typename T2, typename T3, typename T4> Tuple & operator = (const Tuple<T1, T2, T3, T4> & tuple)
 		{first = tuple.first; second = tuple.second; third = tuple.third; fourth = tuple.fourth; return * this;}
 };
+
+// [FUNCTION] makeTuple - Create tuple with deducted types
+template<typename... TS> constexpr Tuple<type::RemoveAnyReference<TS>...> makeTuple(TS && ... args)
+	{return Tuple<type::RemoveAnyReference<TS>...>(forward<TS>(args)...);}
 
 // ------------------------------------------------------------ //
 //		Array Implementation

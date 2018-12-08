@@ -72,7 +72,61 @@ void TestTuple(nx::Testing & test)
 {
 	test.runCase("Pair", [] (bool) 	// Very basic sanity test (Ok...)
 		{
+			// Constructor
+			{
+				nx::Pair<int, int> tuple;
+			}
 			
+			// Constructor
+			{
+				nx::Pair<int, int> tuple(10, 20);
+				expectEqual(10, tuple.first);
+				expectEqual(20, tuple.second);
+			}
+			
+			// Constructor
+			{
+				nx::Pair<int, int> tuple = nx::makeTuple(10, 20);
+				expectEqual(10, tuple.first);
+				expectEqual(20, tuple.second);
+			}
+						
+			// Constructor
+			{
+				nx::Pair<int, int> tuple = nx::lvalue(nx::makeTuple(10, 20));
+				expectEqual(10, tuple.first);
+				expectEqual(20, tuple.second);
+			}
+			
+			// Constructor
+			{
+				nx::Pair<double, double> tuple = nx::makeTuple(10, 20);
+				expectEqual(10, tuple.first);
+				expectEqual(20, tuple.second);
+			}
+						
+			// Constructor
+			{
+				nx::Pair<double, double> tuple = nx::lvalue(nx::makeTuple(10, 20));
+				expectEqual(10.0, tuple.first);
+				expectEqual(20.0, tuple.second);
+			}
+			
+			// Assignment
+			{
+				nx::Pair<double, double> tuple(10, 20);
+				tuple = nx::makeTuple(30, 40);
+				expectEqual(30.0, tuple.first);
+				expectEqual(40.0, tuple.second);
+			}
+			
+			// Assignment
+			{
+				nx::Pair<double, double> tuple(10, 20);
+				tuple = nx::lvalue(nx::makeTuple(30, 40));
+				expectEqual(30.0, tuple.first);
+				expectEqual(40.0, tuple.second);
+			}
 		}
 	);
 }
