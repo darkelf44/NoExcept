@@ -330,9 +330,11 @@ template<typename X, typename Y> struct Tuple<X, Y>
 	template<typename T1, typename T2> Tuple(T1 && t1, T2 && t2)
 		: first(forward<T1>(t1)), second(forward<T2>(t2)) {}
 		
-	// Methods - Implemented in nx-util.hh
-	template<size_t I> meta::Select<I, X, Y> & at();
-	template<size_t I> const meta::Select<I, X, Y> & at() const;
+	// Methods
+	template<size_t I> EnableIf<I == 0, X &> at() {return first;}
+	template<size_t I> EnableIf<I == 0, const X &> at() const {return first;}
+	template<size_t I> EnableIf<I == 1, Y &> & at() {return second;}
+	template<size_t I> EnableIf<I == 1, const Y &> & at() const {return second;}
 	
 	// Copy and move
 	Tuple & operator = (Tuple &&) = default;
@@ -365,9 +367,13 @@ template<typename X, typename Y, typename Z> struct Tuple<X, Y, Z>
 	template<typename T1, typename T2, typename T3> Tuple(T1 && t1, T2 && t2, T3 && t3)
 		: first(forward<T1>(t1)), second(forward<T2>(t2)), third(forward<T3>(t3)) {}
 		
-	// Methods - Implemented in nx-util.hh
-	template<size_t I> meta::Select<I, X, Y, Z> & at();
-	template<size_t I> const meta::Select<I, X, Y, Z> & at() const;
+	// Methods
+	template<size_t I> EnableIf<I == 0, X &> at() {return first;}
+	template<size_t I> EnableIf<I == 0, const X &> at() const {return first;}
+	template<size_t I> EnableIf<I == 1, Y &> & at() {return second;}
+	template<size_t I> EnableIf<I == 1, const Y &> & at() const {return second;}
+	template<size_t I> EnableIf<I == 2, Z &> & at() {return third;}
+	template<size_t I> EnableIf<I == 2, const Z &> & at() const {return third;}
 	
 	// Copy and move
 	Tuple & operator = (Tuple &&) = default;
@@ -401,9 +407,15 @@ template<typename X, typename Y, typename Z, typename W> struct Tuple<X, Y, Z, W
 	template<typename T1, typename T2, typename T3, typename T4> Tuple(T1 && t1, T2 && t2, T3 && t3, T4 && t4)
 		: first(forward<T1>(t1)), second(forward<T2>(t2)), third(forward<T3>(t3)), fourth(forward<T4>(t4)) {}
 		
-	// Methods - Implemented in nx-util.hh
-	template<size_t I> meta::Select<I, X, Y, Z, W> & at();
-	template<size_t I> const meta::Select<I, X, Y, Z, W> & at() const;
+	// Methods
+	template<size_t I> EnableIf<I == 0, X &> at() {return first;}
+	template<size_t I> EnableIf<I == 0, const X &> at() const {return first;}
+	template<size_t I> EnableIf<I == 1, Y &> & at() {return second;}
+	template<size_t I> EnableIf<I == 1, const Y &> & at() const {return second;}
+	template<size_t I> EnableIf<I == 2, Z &> & at() {return third;}
+	template<size_t I> EnableIf<I == 2, const Z &> & at() const {return third;}
+	template<size_t I> EnableIf<I == 3, W &> & at() {return fourth;}
+	template<size_t I> EnableIf<I == 3, const W &> & at() const {return fourth;}
 	
 	// Copy and move
 	Tuple & operator = (Tuple &&) = default;

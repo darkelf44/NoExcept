@@ -43,8 +43,8 @@ template<typename T> struct DisableIf<false, T> { using Result = T; };
 template<typename T> using Id = typename proto::Id<T>::Result;
 template<typename ... TS> using Seq = typename proto::Seq<TS ...>::Result;
 
-template<bool b, typename T> using EnableIf = typename proto::EnableIf<b, T>::Result;
-template<bool b, typename T> using DisableIf = typename proto::DisableIf<b, T>::Result;
+template<bool b, typename T = void> using EnableIf = typename proto::EnableIf<b, T>::Result;
+template<bool b, typename T = void> using DisableIf = typename proto::DisableIf<b, T>::Result;
 	
 // Namespace "nx::type::impl"
 namespace impl {
