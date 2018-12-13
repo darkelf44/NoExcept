@@ -10,31 +10,6 @@
 
 // Namespace "nx"
 namespace nx {
-	
-// Namespace "nx::meta" - Meta programming resources
-namespace meta {
-	
-// Namespace "nx::meta::proto" - Naked C++ meta functions, without wrappers
-namespace proto {
-	
-// [META FUNCTION] If - Conditional expression
-template<bool b, typename T, typename F> struct If;
-template<typename T, typename F> struct If<true, T, F> { using Result = T; };
-template<typename T, typename F> struct If<false, T, F> { using Result = F; };
-
-// [META FUNCTION] Select - Select from a parameter list
-template<size_t i, typename ... TS> struct Select;
-template<typename T, typename ... TS> struct Select<0, T, TS ...> { using Result = T; };
-template<size_t i, typename T, typename ... TS> struct Select<i, T, TS ...> { using Result = typename Select<i - 1, TS ...>::Result; };
-
-// close namespace "nx::meta::proto"
-}
-
-template<bool b, typename T, typename F> using If = typename proto::If<b, T, F>::Result;
-template<size_t i, typename ... TS> using Select = typename proto::Select<i, TS ...>::Result;
-
-// close namespace "nx::meta"
-}
 
 // Namespace "nx::type" - Type system related functionality
 namespace type {
@@ -66,6 +41,11 @@ template<> struct UInt<8> { using Result = uint64_t; };
 template<size_t N> struct Float;
 template<> struct Float<sizeof(float)> { using Result = float; };
 template<> struct Float<sizeof(double)> { using Result = double; };
+
+
+// [META FUNCTION] IsEqual - True, if the type is const qualified
+template<typename T, typename U> struct IsEqual { static constexpr bool result = false; };
+template<typename T> struct IsEqual<T, T> { static constexpr bool result = true; };
 
 
 // [META FUNCTION] IsConstant - True, if the type is const qualified
@@ -140,6 +120,7 @@ template<typename T> struct Strip { using Result = typename RemoveQualifiers<typ
 // Close namespace "nx::type::proto"
 }
 
+
 // Templated types
 template<size_t N> using Char = typename proto::Char<N>::Result;
 template<size_t N> using Int = typename proto::Int<N>::Result;
@@ -148,25 +129,28 @@ template<size_t N> using Float = typename proto::Float<N>::Result;
 
 // [FUNCTION] typeid - returns a unique integer id for a type
 template<typename T> inline uintptr_t typeid()
-	{ static void * id; return reinterpret_cast<uintptr_t>(&id); }
+	{static void * id; return reinterpret_cast<uintptr_t>(&id);}
+	
+template<typename T, typename T> inline constexpr bool isEqual()
+	{return proto::IsEqual<T, U>::result;}
 
 template<typename T> inline constexpr bool isConstant()
-	{ return proto::IsConstant<T>::result; }
+	{return proto::IsConstant<T>::result;}
 template<typename T> inline constexpr bool isVolatile()
-	{ return proto::IsVolatile<T>::result; }
+	{return proto::IsVolatile<T>::result;}
 template<typename T> inline constexpr bool isQualified()
-	{ return proto::IsConstant<T>::result || proto::IsVolatile<T>::result; }
+	{return proto::IsConstant<T>::result || proto::IsVolatile<T>::result;}
 	
 template<typename T> inline constexpr bool isPointer()
-	{ return proto::IsPointer<T>::result; }
+	{return proto::IsPointer<T>::result;}
 template<typename T> inline constexpr bool isReference()
-	{ return proto::IsReference<T>::result; }
+	{return proto::IsReference<T>::result;}
 template<typename T> inline constexpr bool isLValueReference()
-	{ return proto::IsReference<T>::result; }
+	{return proto::IsReference<T>::result;}
 template<typename T> inline constexpr bool isRValueReference()
-	{ return proto::IsRValueReference<T>::result; }
+	{return proto::IsRValueReference<T>::result; }
 template<typename T> inline constexpr bool isAnyReference()
-	{ return proto::IsReference<T>::result || proto::IsRValueReference<T>::result; }
+	{return proto::IsReference<T>::result || proto::IsRValueReference<T>::result;}
 
 template<typename T> using RemoveConstant = typename proto::RemoveConstant<T>::Result;
 template<typename T> using RemoveVolatile = typename proto::RemoveVolatile<T>::Result;
@@ -180,6 +164,34 @@ template<typename T> using RemoveAnyReference = typename proto::RemoveAnyReferen
 
 template<typename T> using Strip = typename RemoveQualifiers<typename RemoveAnyReference<T>::Result>::Result;
 
+// Namespace "nx::type::impl"
+namespace impl {
+
+// Function to implement conversion check
+template<typename T> void hasConversionImpl(T) noexcept {}
+	
+// Tests if the type can be converted into a different one
+template<typename T, typename U>
+	constexpr bool hasConversion(const void *) noexcept {return isEqual<RemoveQualifiers<U>::Result, void>();}
+template<typename T, typename U, typename = Seq<decltype(hasConversionImpl<U>(param<T>())), void>>
+	constexpr bool hasConversion(void *) noexcept {return true;}
+
+// Tests if the type can be converted into a different one
+template<typename T, typename U>
+	constexpr bool hasNoexceptConversion(const void *) noexcept {return isEqual<RemoveQualifiers<U>::Result, void>();}
+template<typename T, typename U, typename = Seq<decltype(hasConversionImpl<U>(param<T>())), void>>
+	constexpr bool hasNoexceptConversion(void *) noexcept {return noexcept(hasConversionImpl<U>(param<T>()));}
+
+// Close namespace "nx::type::impl"
+}
+
+
+template<typename T, typename U> constexpr bool hasConversion()
+	{return impl::hasConversion<T, U>(null<void>());}
+template<typename T, typename U> constexpr bool hasNoexceptConversion()
+	{return impl::hasNoexceptConversion<T, U>(null<void>());}
+
+
 // Close namespace "nx::type"	
 }
 
@@ -191,13 +203,13 @@ using nx::type::typeid;
 
 // [FUNCTION] lvalue - Turns anything into an rvalue (Hey, it can be useful)
 template<typename T> constexpr nx::type::RemoveAnyReference<T> & lvalue(T && value)
-	{ return static_cast<nx::type::RemoveAnyReference<T> &>(value); }
+	{return static_cast<nx::type::RemoveAnyReference<T> &>(value);}
 // [FUNCTION] rvalue - Same as std::move, turns anything into an lvalue
 template<typename T> constexpr nx::type::RemoveAnyReference<T> && rvalue(T && value)
-	{ return static_cast<nx::type::RemoveAnyReference<T> &&>(value); }
+	{return static_cast<nx::type::RemoveAnyReference<T> &&>(value);}
 // [FUNCTION] forward - Same as std::forward, explicit cast to either rvalue or lvalue
 template<typename T> constexpr T && forward(nx::type::RemoveAnyReference<T> & value)
-	{ return static_cast<T &&>(value); }
+	{return static_cast<T &&>(value);}
 
 // ------------------------------------------------------------ //
 //		Bits auxiliary

@@ -50,81 +50,75 @@ template<bool b, typename T = void> using DisableIf = typename proto::DisableIf<
 namespace impl {
 
 // Tests if the type has a specific constructor
-template<typename ... TS> struct HasCreate
-{
-	template<typename T> static constexpr bool hasCreate(const T *, void *) noexcept
-		{return false;}
-	template<typename T> static constexpr bool hasCreate(T *, Seq<decltype(new (nullptr, nothing) T(param<TS>() ...)), void> *) noexcept
-		{return true;}
-};
+template<typename T, typename ... TS>
+	constexpr bool hasCreate(const void *) noexcept {return false; }
+template<typename T, typename ... TS, typename = Seq<decltype(new (nullptr, nothing) T(param<TS>() ...)), void>>
+	constexpr bool hasCreate(void *) noexcept {return true;}
 
 // Tests if the type has a destructor
-template<typename T> constexpr bool hasDestroy(const T *, void *) noexcept
-	{return false;}
-template<typename T> constexpr bool hasDestroy(T *, Seq<decltype(param<T &>().~T()), void> *) noexcept
-	{return true;}
+template<typename T>
+	constexpr bool hasDestroy(const void *) noexcept {return false;}
+template<typename T, typename = Seq<decltype(param<T &>().~T()), void>>
+	constexpr bool hasDestroy(void *) noexcept {return true;}
 
 // Tests if the type has a copy assignment
-template<typename T> constexpr bool hasCopy(const T *, void *) noexcept
-	{return false;}
-template<typename T> constexpr bool hasCopy(T *, Seq<decltype(param<T &>() = param<T &>()), void> *) noexcept
-	{return true;}
+template<typename T>
+	constexpr bool hasCopy(const void *) noexcept {return false;}
+template<typename T, typename = Seq<decltype(param<T &>() = param<T &>()), void>>
+	constexpr bool hasCopy(void *) noexcept {return true;}
 
 // Tests if the type has a move assignment
-template<typename T> constexpr bool hasMove(const T *, void *) noexcept
-	{return false;}
-template<typename T> constexpr bool hasMove(T *, Seq<decltype(param<T &>() = param<T &&>()), void> *) noexcept
-	{return true;}
+template<typename T>
+	constexpr bool hasMove(const void *) noexcept {return false;}
+template<typename T, typename = Seq<decltype(param<T &>() = param<T &&>()), void>>
+	constexpr bool hasMove(void *) noexcept {return true;}
 
 // Tests if the type has specific noexcept constructor
-template<typename ... TS> struct HasNoexceptCreate
-{
-	template<typename T> static constexpr bool hasNoexceptCreate(const T *, void *) noexcept
-		{return false;}
-	template<typename T> static constexpr bool hasNoexceptCreate(T *, Seq<decltype(new (nullptr, nothing) T(param<TS>() ...)), void> *) noexcept
-		{return noexcept(new (nullptr, nothing) T(param<TS>() ...));}
-};
+template<typename T, typename ... TS>
+	constexpr bool hasNoexceptCreate(const void *) noexcept {return false;}
+template<typename T, typename ... TS, typename = Seq<decltype(new (nullptr, nothing) T(param<TS>() ...)), void>>
+	constexpr bool hasNoexceptCreate(void *) noexcept {return noexcept(new (nullptr, nothing) T(param<TS>() ...));}
 
 // Tests if the type has a noexcept destructor
-template<typename T> constexpr bool hasNoexceptDestroy(const T *, void *) noexcept
-	{return false;}
-template<typename T> constexpr bool hasNoexceptDestroy(T *, Seq<decltype(param<T &>().~T()), void> *) noexcept
-	{return noexcept(param<T &>().~T());}
+template<typename T>
+	constexpr bool hasNoexceptDestroy(const void *) noexcept {return false;}
+template<typename T, typename = Seq<decltype(param<T &>().~T()), void>>
+	constexpr bool hasNoexceptDestroy(void *) noexcept {return noexcept(param<T &>().~T());}
 
 // Tests if the type has a noexcept copy assignment
-template<typename T> constexpr bool hasNoexceptCopy(const T *, void *) noexcept
-	{return false;}
-template<typename T> constexpr bool hasNoexceptCopy(T *, Seq<decltype(param<T &>() = param<T &>()), void> *) noexcept
-	{return noexcept(param<T &>() = param<T &>());}
+template<typename T>
+	constexpr bool hasNoexceptCopy(const void *) noexcept {return false;}
+template<typename T, typename = Seq<decltype(param<T &>() = param<T &>()), void>>
+	constexpr bool hasNoexceptCopy(void *) noexcept {return noexcept(param<T &>() = param<T &>());}
 
 // Tests if the type has a noexcept move assignment
-template<typename T> constexpr bool hasNoexceptMove(const T *, void *) noexcept
-	{return false;}
-template<typename T> constexpr bool hasNoexceptMove(T *, Seq<decltype(param<T &>() = param<T &&>()), void> *) noexcept
-	{return noexcept(param<T &>() = param<T &&>());}
+template<typename T>
+	constexpr bool hasNoexceptMove(const void *) noexcept {return false;}
+template<typename T, typename = Seq<decltype(param<T &>() = param<T &&>()), void>>
+	constexpr bool hasNoexceptMove(void *) noexcept {return noexcept(param<T &>() = param<T &&>());}
 	
 // Close namespace "nx::type::impl"
 }
 
 // Check for default functions
 template<typename T, typename ... TS> constexpr bool hasCreate()
-	{return impl::HasCreate<TS ...>::hasCreate(null<T>(), nullptr);}
+	{return impl::hasCreate<T, TS ...>(null<void>());}
 template<typename T> constexpr bool hasDestroy()
-	{return impl::hasDestroy(null<T>(), nullptr);}
+	{return impl::hasDestroy<T>(null<void>());}
 template<typename T> constexpr bool hasCopy()
-	{return impl::hasCopy(null<T>(), nullptr);}
+	{return impl::hasCopy<T>(null<void>());}
 template<typename T> constexpr bool hasMove()
-	{return impl::hasMove(null<T>(), nullptr);}
+	{return impl::hasMove<T>(null<void>());}
 
 // Check for noexcept default functions
 template<typename T, typename ... TS> constexpr bool hasNoexceptCreate()
-	{return impl::HasNoexceptCreate<TS ...>::hasNoexceptCreate(null<T>(), nullptr);}
+	{return impl::hasNoexceptCreate<T, TS ...>(null<void>());}
 template<typename T> constexpr bool hasNoexceptDestroy()
-	{return impl::hasNoexceptDestroy(null<T>(), nullptr);}
+	{return impl::hasNoexceptDestroy<T>(null<void>());}
 template<typename T> constexpr bool hasNoexceptCopy()
-	{return impl::hasNoexceptCopy(null<T>(), nullptr);}
+	{return impl::hasNoexceptCopy<T>(null<void>());}
 template<typename T> constexpr bool hasNoexceptMove()
-	{return impl::hasNoexceptMove(null<T>(), nullptr);}
+	{return impl::hasNoexceptMove<T>(null<void>());}
 
 // Allocate memory for a type, without constructing them
 template<typename T> inline T * alloc(size_t size = sizeof(T)) noexcept
