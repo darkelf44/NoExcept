@@ -120,7 +120,6 @@ template<typename T> struct Strip { using Result = typename RemoveQualifiers<typ
 // Close namespace "nx::type::proto"
 }
 
-
 // Templated types
 template<size_t N> using Char = typename proto::Char<N>::Result;
 template<size_t N> using Int = typename proto::Int<N>::Result;
@@ -131,7 +130,7 @@ template<size_t N> using Float = typename proto::Float<N>::Result;
 template<typename T> inline uintptr_t typeid()
 	{static void * id; return reinterpret_cast<uintptr_t>(&id);}
 	
-template<typename T, typename T> inline constexpr bool isEqual()
+template<typename T, typename U> inline constexpr bool isEqual()
 	{return proto::IsEqual<T, U>::result;}
 
 template<typename T> inline constexpr bool isConstant()
@@ -164,33 +163,57 @@ template<typename T> using RemoveAnyReference = typename proto::RemoveAnyReferen
 
 template<typename T> using Strip = typename RemoveQualifiers<typename RemoveAnyReference<T>::Result>::Result;
 
+
 // Namespace "nx::type::impl"
 namespace impl {
 
 // Function to implement conversion check
 template<typename T> void hasConversionImpl(T) noexcept {}
 	
-// Tests if the type can be converted into a different one
+// Tests if there is a conversion from T to U
 template<typename T, typename U>
-	constexpr bool hasConversion(const void *) noexcept {return isEqual<RemoveQualifiers<U>::Result, void>();}
+	constexpr bool hasConversion(const void *) noexcept {return isEqual<RemoveQualifiers<U>, void>();}
 template<typename T, typename U, typename = Seq<decltype(hasConversionImpl<U>(param<T>())), void>>
 	constexpr bool hasConversion(void *) noexcept {return true;}
 
-// Tests if the type can be converted into a different one
+// Tests if there is a noexcept conversion from T to U
 template<typename T, typename U>
-	constexpr bool hasNoexceptConversion(const void *) noexcept {return isEqual<RemoveQualifiers<U>::Result, void>();}
+	constexpr bool hasNoexceptConversion(const void *) noexcept {return isEqual<RemoveQualifiers<U>, void>();}
 template<typename T, typename U, typename = Seq<decltype(hasConversionImpl<U>(param<T>())), void>>
 	constexpr bool hasNoexceptConversion(void *) noexcept {return noexcept(hasConversionImpl<U>(param<T>()));}
 
 // Close namespace "nx::type::impl"
 }
 
-
+// [META-FUNCTION] hasConversion
 template<typename T, typename U> constexpr bool hasConversion()
 	{return impl::hasConversion<T, U>(null<void>());}
+// [META-FUNCTION] hasNoexceptConversion
 template<typename T, typename U> constexpr bool hasNoexceptConversion()
 	{return impl::hasNoexceptConversion<T, U>(null<void>());}
 
+
+// Namespace "nx::type::proto"
+namespace proto {
+	
+// [META-FUNCTION]  - Checks if T can be converted to all of TS
+template<typename T, typename ... TS> struct ConvertsToAll;
+template<typename T> struct ConvertsToAll<T> { static constexpr bool result = true; };
+template<typename T, typename U, typename ... US> struct ConvertsToAll<T, U, US...> { static constexpr bool result = hasConversion<T, U>() && ConvertsToAll<T, US...>::result; };
+
+	
+// [META-FUNCTION]  - Checks if all of TS can be converted to T
+template<typename T, typename ... TS> struct ConvertsFromAll;
+template<typename T> struct ConvertsFromAll<T> { static constexpr bool result = true; };
+template<typename T, typename U, typename ... US> struct ConvertsFromAll<T, U, US...> { static constexpr bool result = hasConversion<U, T>() && ConvertsFromAll<T, US...>::result; };
+
+// Close namespace "nx::type::proto"
+}
+
+template<typename T, typename ... TS> constexpr bool convertsToAll()
+	{return proto::ConvertsToAll<T, TS...>::result;}
+template<typename T, typename ... TS> constexpr bool convertsFromAll()
+	{return proto::ConvertsFromAll<T, TS...>::result;}
 
 // Close namespace "nx::type"	
 }

@@ -166,7 +166,7 @@ inline Range<double> range(double start, double end, double step = 1.0)
 	size and capacity of the list, and also introduces some extra indirection. It's a small tradeoff, but a tradeoff
 	nevertheless.
  */
-template<typename T> class List: public Object
+template<typename T> class List
 {
 public:
 	// Element type
@@ -188,7 +188,9 @@ public:
 	List(List && list) noexcept
 		: n(list.n), m(list.m), items(list.items) {list.n = 0; list.m = 0; list.items = nullptr;}
 	List(const List & list);
-	~List() override
+	template<typename... TS, typename = EnableIf<nx::type::convertsFromAll<T, TS &&...>()>>
+		explicit List(TS && ... items) {} // TODO: implement
+	~List()
 		{nx::type::destroyArrayAt(items, n); nx::type::free(items);}
 		
 	// Size & capacity
@@ -257,7 +259,7 @@ template<typename T> void swap(List<T> & left, List<T> & right) noexcept;
 
 
 // Set class - TODO: concurrent, lock free, virtual interface
-template<typename T> class Set: public Object
+template<typename T> class Set
 {
 public:
 private:
@@ -278,7 +280,7 @@ private:
 	128, 32768 or 2^31 bytes, it will use 8, 16 or 32 bit indices respectively, otherwise it' use 64bit indices
 	(but by then just the index table will take up 8 GB of memory).
  */
-template<typename K, typename V> class Dictionary: public Object
+template<typename K, typename V> class Dictionary
 {
 public:
 	// Entry type
@@ -288,7 +290,7 @@ public:
 	Dictionary() noexcept = default;
 	Dictionary(Dictionary && dict) noexcept;
 	Dictionary(const Dictionary & dict);
-	~Dictionary() override;
+	~Dictionary();
 		
 	// Size & capacity
 	size_t size() const noexcept
@@ -508,7 +510,7 @@ template<typename T> void swap(T & left, T & right) noexcept(nx::type::hasNoexce
 // ------------------------------------------------------------ //
 
 template<typename T> List<T>::List(const List<T> & list)
-	: nx::Object(), n(0), m(0), items(nullptr)
+	: n(0), m(0), items(nullptr)
 {
 	if (list.n > 0)
 	{
