@@ -40,16 +40,16 @@ enum class Nothing { nothing }; constexpr auto nothing = Nothing::nothing;
 struct Object
 {
 	// Constructor & destructor
-	inline Object();
-	inline virtual ~Object();
+	inline Object() noexcept;
+	inline virtual ~Object() noexcept;
 	
 	// Copy operators deleted
 	Object(const Object &) = delete;
 	Object & operator = (const Object &) = delete;
 };
 
-Object::Object() = default;
-Object::~Object() = default;
+Object::Object() noexcept = default;
+Object::~Object() noexcept = default;
 
 // [FUNCTION] skip - A very useful function. It takes any number of arguments, and does absolutely nothing
 template<typename... TS> constexpr void skip(TS && ...) noexcept
@@ -63,8 +63,8 @@ template<typename T> constexpr T * null() noexcept
 template<typename T> constexpr T & nullobj() noexcept
 	{ return * null<T>(); }
 	
-// [FUNCTION] param - Intended for use in typeof/sizeof/noexcept expressions, creates a expression with the given type
-template<typename T> constexpr T && param() noexcept;
+// [FUNCTION] declval - Intended for use in typeof/sizeof/noexcept expressions, creates a expression with the given type
+template<typename T> constexpr T && declval() noexcept;
 	
 // Close namespace "nx"
 }

@@ -201,19 +201,32 @@ template<typename T, typename ... TS> struct ConvertsToAll;
 template<typename T> struct ConvertsToAll<T> { static constexpr bool result = true; };
 template<typename T, typename U, typename ... US> struct ConvertsToAll<T, U, US...> { static constexpr bool result = hasConversion<T, U>() && ConvertsToAll<T, US...>::result; };
 
-	
+// [META-FUNCTION]  - Checks if T can be converted to all of TS noexcept
+template<typename T, typename ... TS> struct ConvertsToAllNoexcept;
+template<typename T> struct ConvertsToAllNoexcept<T> { static constexpr bool result = true; };
+template<typename T, typename U, typename ... US> struct ConvertsToAllNoexcept<T, U, US...> { static constexpr bool result = hasNoexceptConversion<T, U>() && ConvertsToAllNoexcept<T, US...>::result; };
+
 // [META-FUNCTION]  - Checks if all of TS can be converted to T
 template<typename T, typename ... TS> struct ConvertsFromAll;
 template<typename T> struct ConvertsFromAll<T> { static constexpr bool result = true; };
 template<typename T, typename U, typename ... US> struct ConvertsFromAll<T, U, US...> { static constexpr bool result = hasConversion<U, T>() && ConvertsFromAll<T, US...>::result; };
+
+// [META-FUNCTION]  - Checks if all of TS can be converted to T noexcept
+template<typename T, typename ... TS> struct ConvertsFromAllNoexcept;
+template<typename T> struct ConvertsFromAllNoexcept<T> { static constexpr bool result = true; };
+template<typename T, typename U, typename ... US> struct ConvertsFromAllNoexcept<T, U, US...> { static constexpr bool result = hasNoexceptConversion<U, T>() && ConvertsFromAllNoexcept<T, US...>::result; };
 
 // Close namespace "nx::type::proto"
 }
 
 template<typename T, typename ... TS> constexpr bool convertsToAll()
 	{return proto::ConvertsToAll<T, TS...>::result;}
+template<typename T, typename ... TS> constexpr bool convertsToAllNoexcept()
+	{return proto::ConvertsToAllNoexcept<T, TS...>::result;}
 template<typename T, typename ... TS> constexpr bool convertsFromAll()
 	{return proto::ConvertsFromAll<T, TS...>::result;}
+template<typename T, typename ... TS> constexpr bool convertsFromAllNoexcept()
+	{return proto::ConvertsFromAllNoexcept<T, TS...>::result;}
 
 // Close namespace "nx::type"	
 }
