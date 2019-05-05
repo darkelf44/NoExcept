@@ -349,22 +349,33 @@ template<typename T> size_t Testing::toString(char * buffer, size_t n, const T &
 // close namespace "nx"
 }
 
+// [MACRO] __THIS_LOCATION__ - Create location object on the current line
+#if defined(__PRETTY_FUNCTION__)
+	#define __THIS_LOCATION__ (::nx::Testing::Location(__FILE__, __PRETTY_FUNCTION__, __LINE__))
+#else
+	#define __THIS_LOCATION__ (::nx::Testing::Location(__FILE__, __func__, __LINE__))
+#endif
+
+#define ExpectEqual(...) expectEqual(__VA_ARGS__, __THIS_LOCATION__)
+#define AssertEqual(...) assertEqual(__VA_ARGS__, __THIS_LOCATION__)
+
 // Dual static buffers
 constexpr size_t BUFFER_SIZE = 1024;
 static char valueTextBuffer[BUFFER_SIZE];
 static char exprTextBuffer[BUFFER_SIZE];
 
-template<typename T> void expectEqual(typename nx::Testing::Id<const T &>::Result value, const T & expr)
+template<typename T> void expectEqual(typename nx::Testing::Id<const T &>::Result value, const T & expr, const nx::Testing::Location & location)
 {
 	if (value == expr)
 		nx::Testing::get().assertPassed();
 	else
 	{
 		nx::Testing::get().assertFailed();
+		
 		// Log out details of the failed assert
 		nx::Testing::toString(valueTextBuffer, BUFFER_SIZE, value);
 		nx::Testing::toString(exprTextBuffer, BUFFER_SIZE, expr);
-		nx::Testing::get().log("Error: Assertion failed: Expected %s, got %s\n", valueTextBuffer, exprTextBuffer);
+		nx::Testing::get().log("%s: %s: line %llu: Error: Assertion failed: Expected %s, got %s\n", location.file, location.func, location.line, valueTextBuffer, exprTextBuffer);
 	}
 }
 

@@ -40,6 +40,9 @@ del /Q test\obj\*
 ::%ARCHIVE% %LIBRARY% obj\nx-ini.o
 
 :: Test
+%MAKETEST% test\test-nx-new.cc %TESTLIBS% -o test\bin\test-nx-new.exe && test\bin\test-nx-new.exe
+%MAKETEST% %ALTFLAGS% test\test-nx-new.cc %TESTLIBS% -o test\bin\test-nx-new[alt].exe && test\bin\test-nx-new[alt].exe
+
 %MAKETEST% test\test-nx-type.cc %TESTLIBS% -o test\bin\test-nx-type.exe && test\bin\test-nx-type.exe
 %MAKETEST% %ALTFLAGS% test\test-nx-type.cc %TESTLIBS% -o test\bin\test-nx-type[alt].exe && test\bin\test-nx-type[alt].exe
 

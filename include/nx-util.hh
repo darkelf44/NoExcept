@@ -187,9 +187,9 @@ public:
 		: n(0), m(0), items(nullptr) {}
 	List(List && list) noexcept
 		: n(list.n), m(list.m), items(list.items) {list.n = 0; list.m = 0; list.items = nullptr;}
-	List(const List & list);
+	List(const List & list) noexcept(nx::type::hasNoexceptCreate<T, const T &>());
 	template<typename... TS, typename = EnableIf<nx::type::convertsFromAll<T, TS &&...>()>>
-		explicit List(TS && ... items) {} // TODO: implement
+		explicit List(TS && ... items) noexcept(nx::type::convertsFromAllNoexcept<T, TS &&...>());
 	~List()
 		{nx::type::destroyArrayAt(items, n); nx::type::free(items);}
 		
@@ -340,19 +340,19 @@ template<typename T> class In
 {
 public:
 	// Constructors
-	In(const T & obj)
+	In(const T & obj) noexcept
 		: ptr(& obj) {}
-	In(Nothing)
+	In(Nothing) noexcept
 		: ptr(nullptr) {}
 
 	// Operator
-	operator bool()
+	operator bool() noexcept
 		{return ptr;}
 
 	// Use parameter
-	bool provided() const
+	bool provided() const noexcept
 		{return ptr;}
-	const T & get(const T & def) const
+	const T & get(const T & def) const noexcept
 		{return ptr ? * ptr : def;}
 
 private:
@@ -365,21 +365,21 @@ private:
 template<typename T> class Out
 {
 	// Constructors
-	Out(T & obj)
+	Out(T & obj) noexcept
 		: ptr(& obj) {}
-	Out(Nothing)
+	Out(Nothing) noexcept
 		: ptr(nullptr) {}
 
 	// Operator
-	operator bool()
+	operator bool() noexcept
 		{return ptr;}
 
 	// Use parameter
-	bool provided() const
+	bool provided() const noexcept
 		{return ptr;}
-	void set(T && val) const
+	void set(T && val) const noexcept(nx::type::hasNoexceptMove<T>())
 		{if (ptr) (* ptr) = rvalue(val);}
-	void set(const T & val) const
+	void set(const T & val) const noexcept(nx::type::hasNoexceptCopy<T>())
 		{if (ptr) (* ptr) = val;}
 
 private:
@@ -392,23 +392,23 @@ private:
 template<typename T> class InOut
 {
 	// Constructors
-	InOut(T & obj)
+	InOut(T & obj) noexcept
 		: ptr(& obj) {}
-	InOut(Nothing)
+	InOut(Nothing) noexcept
 		: ptr(nullptr) {}
 
 	// Operator
-	operator bool()
+	operator bool() noexcept
 		{return ptr;}
 		
 	// Use parameter
-	bool provided() const
+	bool provided() const noexcept
 		{return ptr;}
-	void set(T && val) const
+	void set(T && val) const noexcept(nx::type::hasNoexceptMove<T>())
 		{if (ptr) (* ptr) = rvalue(val);}
-	void set(const T & val) const
+	void set(const T & val) const noexcept(nx::type::hasNoexceptCopy<T>())
 		{if (ptr) (* ptr) = val;}
-	const T & get(const T & def) const
+	const T & get(const T & def) const noexcept
 		{return ptr ? * ptr : def;}
 
 private:
@@ -509,7 +509,7 @@ template<typename T> void swap(T & left, T & right) noexcept(nx::type::hasNoexce
 //		List Implementation
 // ------------------------------------------------------------ //
 
-template<typename T> List<T>::List(const List<T> & list)
+template<typename T> List<T>::List(const List<T> & list) noexcept(nx::type::hasNoexceptCreate<T, const T &>())
 	: n(0), m(0), items(nullptr)
 {
 	if (list.n > 0)

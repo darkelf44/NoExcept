@@ -1,6 +1,6 @@
-bin/
-lib/
-obj/
+build/bin/
+build/lib/
+build/obj/
 test/bin/
 test/lib/
 test/obj/

@@ -7,13 +7,6 @@
 
 template<typename T> void TestRandomGenerator(nx::Testing & test)
 {
-	// Test if the generator is usable
-	test.runCase("Usability", [] (bool)
-		{
-			T rand;
-		}
-	);
-
 	// Test if the generator creates reproducible results
 	test.runCase("Reproducibility", [] (bool)
 		{
@@ -35,7 +28,7 @@ void TestSession(nx::Testing & test)
 	test.runGroup("Xorshiro128*", TestRandomGenerator<nx::rng::Xorshiro128s>);
 	test.runGroup("Xorshiro128**", TestRandomGenerator<nx::rng::Xorshiro128ss>);
 	
-	// Test Xorshiro 128 generator
+	// Test Xorshiro 256 generator
 	test.runGroup("Xorshiro256", TestRandomGenerator<nx::rng::Xorshiro256n>);
 	test.runGroup("Xorshiro256+", TestRandomGenerator<nx::rng::Xorshiro256p>);
 	test.runGroup("Xorshiro256*", TestRandomGenerator<nx::rng::Xorshiro256s>);
