@@ -14,6 +14,7 @@ namespace nx {
 
 // Abstract classes
 template<typename T> class Iterator;
+template<typename T> class Iterable;
 
 // Numeric range
 template<typename T> class Range;
@@ -44,8 +45,6 @@ namespace iter {
 template<typename T> class Iterator : public Object
 {
 public:
-	virtual ~Iterator() {}
-	
 	virtual T last() const = 0;
 	
 	virtual T next() = 0;
@@ -55,6 +54,11 @@ public:
 	virtual bool hasPrev() const = 0;
 };
 
+// [CLASS] Iterator - Base class of virtual iterators
+template<typename T> class Iterable : public Object
+{
+	virtual UniquePtr<Iterator<T>> iter();
+};
 
 // ------------------------------------------------------------ //
 //		Numeric range
